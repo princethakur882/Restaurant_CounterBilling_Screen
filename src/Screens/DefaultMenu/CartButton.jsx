@@ -1,0 +1,110 @@
+import React, {useContext, useState} from 'react';
+import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
+import { ApiContext } from '../../Context/ApiProvider';
+
+const AddToCartButton = ({item}) => {
+  const {handleAddToCart, handleRemoveFromCart, cartItems} =
+    useContext(ApiContext);
+  const [count, setCount] = useState();
+  const [isAdded, setIsAdded] = useState(false);
+
+  const addToCart = () => {
+    handleAddToCart(item);
+    setIsAdded(true);
+    setCount(1);
+  };
+
+  const increment = () => {
+    setCount(count + 1);
+    handleAddToCart(item);
+  };
+
+  const decrement = () => {
+    if (count > 1) {
+      setCount(count - 1);
+      handleRemoveFromCart(item.id);
+    } else {
+      setIsAdded(false);
+      setCount(0);
+      handleRemoveFromCart(item.id);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      {isAdded ? (
+        <View style={styles.counterContainer}>
+          <TouchableOpacity onPress={decrement} style={[styles.increment]}>
+            <Text style={styles.buttonText}>-</Text>
+          </TouchableOpacity>
+          <Text style={styles.countText}>{count}</Text>
+          <TouchableOpacity onPress={increment} style={[styles.decrement]}>
+            <Text style={styles.buttonText}>+</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <TouchableOpacity onPress={addToCart} style={styles.addButton}>
+          <Text style={styles.addButtonText}>ADD</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: 10,
+  },
+  addButton: {
+    padding: 6,
+    width: 70,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#FF7722',
+    borderRadius: 5,
+  },
+  addButtonText: {
+    color: '#FF7722',
+    fontSize: 16,
+    textAlign: 'center',
+    fontWeight: '700',
+  },
+  counterContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  button: {
+    padding: 8,
+    backgroundColor: '#FF7722',
+    borderRadius: 5,
+  },
+  decrement: {
+    padding: 8,
+    backgroundColor: '#FF7722',
+    borderTopRightRadius: 5,
+    borderBottomRightRadius: 5,
+  },
+  increment: {
+    padding: 8,
+    backgroundColor: '#FF7722',
+    borderTopLeftRadius: 5,
+    borderBottomLeftRadius: 5,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  countText: {
+    color: '#fff',
+    padding: 8,
+    backgroundColor: '#FF7722',
+    fontSize: 16,
+    fontWeight: '900',
+  },
+});
+
+export default AddToCartButton;
