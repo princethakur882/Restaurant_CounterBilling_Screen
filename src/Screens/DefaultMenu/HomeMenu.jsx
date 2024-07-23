@@ -1,5 +1,3 @@
-
-
 import React, { useContext, useEffect, useRef } from 'react';
 import {
   StyleSheet,
@@ -18,7 +16,7 @@ import AddToCartButton from './CartButton';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const HomeMenu = ({ navigation }) => {
-  const { filteredData, searchQuery, setSearchQuery, cartItems, totalPrice } = useContext(ApiContext);
+  const { filteredData, searchQuery, setSearchQuery, cartItems, totalPrice, printReceipt, resetCart } = useContext(ApiContext);
   const { width: screenWidth } = useWindowDimensions();
   const cartBarAnimation = useRef(new Animated.Value(0)).current;
 
@@ -32,7 +30,7 @@ const HomeMenu = ({ navigation }) => {
       duration: 300,
       useNativeDriver: true,
     }).start();
-  }, [totalItems]);
+  }, [totalItems,printReceipt]);
 
   const cartBarTranslateY = cartBarAnimation.interpolate({
     inputRange: [0, 1],
@@ -75,6 +73,7 @@ const HomeMenu = ({ navigation }) => {
     </View>
   );
 
+
   return (
     <View style={styles.container}>
       <View style={styles.login}>
@@ -111,9 +110,19 @@ const HomeMenu = ({ navigation }) => {
           <Icon name="shopping-cart" size={28} color={'white'} />
           <Text style={styles.cartText}>{totalItems} Items | {'\u20B9'} {totalPrice}</Text>
         </View>
+        <View style={{flexDirection:'row'}}>
+        <Pressable style={styles.payButton} onPress={() => {
+          printReceipt();
+          resetCart();
+
+        }}>
+          <Text style={styles.payText}>CASH</Text>
+        </Pressable>
         <Pressable style={styles.payButton} onPress={() => navigation.navigate('BillDetails')}>
           <Text style={styles.payText}>PAY</Text>
         </Pressable>
+        </View>
+        
       </Animated.View>
     </View>
   );
@@ -252,6 +261,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     padding: 5,
     borderRadius: 10,
+    marginHorizontal:4
   },
   payText: {
     fontSize: 15,

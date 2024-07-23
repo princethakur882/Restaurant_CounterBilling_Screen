@@ -43,6 +43,13 @@ const Items = () => {
         getItems();
       });
   };
+
+  const Homerender = () => {
+    useEffect(() => {
+      getItems();
+    }, []);
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.login}>
@@ -60,7 +67,7 @@ const Items = () => {
       <FlatList
         data={items}
         renderItem={({item}) => {
-          const {name, price, imageUrl} = item.data;
+          const {name, price, imageUrl, quantity} = item.data;
           return (
             <View style={styles.itemView}>
               <Image source={{uri: imageUrl}} style={styles.itemImage} />
@@ -68,6 +75,9 @@ const Items = () => {
                 <Text style={styles.nameText}>{name}</Text>
                 <View style={styles.priceView}>
                   <Text style={styles.priceText}>{'\u20B9' + price}</Text>
+                </View>
+                <View style={styles.qty}>
+                  <Text style={styles.qtyText}>{quantity}</Text>
                 </View>
               </View>
               <View style={{margin: 10}}>
@@ -187,7 +197,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingTop: 8,
   },
-   text: {
+  text: {
     fontSize: 18,
     fontWeight: '600',
     color: '#FF7722',

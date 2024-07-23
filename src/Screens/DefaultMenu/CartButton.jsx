@@ -1,32 +1,32 @@
-import React, {useContext, useState} from 'react';
+import React, {useContext, useState, useEffect} from 'react';
 import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
 import { ApiContext } from '../../Context/ApiProvider';
 
 const AddToCartButton = ({item}) => {
-  const {handleAddToCart, handleRemoveFromCart, cartItems} =
-    useContext(ApiContext);
-  const [count, setCount] = useState();
+  const {handleAddToCart, handleRemoveFromCart, count} = useContext(ApiContext);
   const [isAdded, setIsAdded] = useState(false);
+
+  useEffect(() => {
+    if (count(item.id) > 0) {
+      setIsAdded(true);
+    } else {
+      setIsAdded(false);
+    }
+  }, [count(item.id)]);
 
   const addToCart = () => {
     handleAddToCart(item);
     setIsAdded(true);
-    setCount(1);
   };
 
   const increment = () => {
-    setCount(count + 1);
     handleAddToCart(item);
   };
 
   const decrement = () => {
-    if (count > 1) {
-      setCount(count - 1);
-      handleRemoveFromCart(item.id);
-    } else {
+    handleRemoveFromCart(item.id);
+    if (count(item.id) <= 1) {
       setIsAdded(false);
-      setCount(0);
-      handleRemoveFromCart(item.id);
     }
   };
 
@@ -37,7 +37,7 @@ const AddToCartButton = ({item}) => {
           <TouchableOpacity onPress={decrement} style={[styles.increment]}>
             <Text style={styles.buttonText}>-</Text>
           </TouchableOpacity>
-          <Text style={styles.countText}>{count}</Text>
+          <Text style={styles.countText}>{count(item.id)}</Text>
           <TouchableOpacity onPress={increment} style={[styles.decrement]}>
             <Text style={styles.buttonText}>+</Text>
           </TouchableOpacity>

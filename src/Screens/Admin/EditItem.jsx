@@ -19,6 +19,7 @@ const EditItem = ({navigation}) => {
     assets: [{uri: route.params.data.imageUrl}],
   });
   const [name, setName] = useState(route.params.data.name);
+  const [quantity, setQuantity] = useState(route.params.data.quantity);
   const [price, setPrice] = useState(route.params.data.price);
   const [imageUrl, setImageUrl] = useState('');
   const requestCameraPermission = async () => {
@@ -73,6 +74,7 @@ const EditItem = ({navigation}) => {
       .update({
         name: name,
         price: price,
+        quantity: quantity,
         imageUrl: route.params.data.imageUrl + '',
       })
       .then(() => {
@@ -104,6 +106,12 @@ const EditItem = ({navigation}) => {
           style={styles.inputStyle}
           value={price}
           onChangeText={text => setPrice(text)}
+        />
+        <TextInput
+          placeholder="Enter Item Quantity"
+          style={styles.inputStyle}
+          value={quantity}
+          onChangeText={text => setQuantity(text)}
         />
         <TextInput
           placeholder="Enter Item Image URL"

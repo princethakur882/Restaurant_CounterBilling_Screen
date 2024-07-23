@@ -42,9 +42,9 @@ const AdminDashboard = () => {
           onPress={() => {
             setSelectedTab(1);
           }}>
-          <Icon
-            name="add-circle-outline"
-            size={30}
+          <Icons
+            name="plus-circle"
+            size={26}
             color={selectedTab == 1 ? '#FF7722' : 'gray'}
           />
         </TouchableOpacity>

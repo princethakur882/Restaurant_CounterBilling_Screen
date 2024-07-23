@@ -1,29 +1,34 @@
 import React, { useContext } from 'react';
 import { StyleSheet, View, Text, FlatList, TouchableOpacity, Pressable } from 'react-native';
-import { ApiContext } from '../../Context/ApiProvider'; 
+import { ApiContext } from '../../Context/ApiProvider';
+
 const BillDetails = ({ navigation }) => {
   const { cartItems, totalPrice, increment, decrement, count } = useContext(ApiContext);
 
   const renderItem = ({ item }) => (
-    <View style={styles.itemContainer}>
-      <Text style={styles.itemName}>{item.data.name}</Text>
-      <View style={styles.counterContainer}>
-        <TouchableOpacity onPress={() => decrement(item.id)} style={styles.decrement}>
-          <Text style={styles.buttonText}>-</Text>
-        </TouchableOpacity>
-        <Text style={styles.countText}>{count(item.id)}</Text>
-        <TouchableOpacity onPress={() => increment(item.id)} style={styles.increment}>
-          <Text style={styles.buttonText}>+</Text>
-        </TouchableOpacity>
+    item.count > 0 && (
+      <View style={styles.itemContainer}>
+        <Text style={styles.itemName}>{item.data.name}</Text>
+        <View style={styles.counterContainer}>
+          <TouchableOpacity onPress={() => decrement(item.id)} style={styles.decrement}>
+            <Text style={styles.buttonText}>-</Text>
+          </TouchableOpacity>
+          <Text style={styles.countText}>{count(item.id)}</Text>
+          <TouchableOpacity onPress={() => increment(item.id)} style={styles.increment}>
+            <Text style={styles.buttonText}>+</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.itemPrice}>{'\u20B9'}{item.data.price * item.count}</Text>
       </View>
-      <Text style={styles.itemPrice}>{'\u20B9'}{item.data.price * item.count}</Text>
-    </View>
+    )
   );
+
+  const filteredCartItems = cartItems.filter(item => item.count > 0);
 
   return (
     <View style={styles.container}>
       <FlatList
-        data={cartItems}
+        data={filteredCartItems}
         renderItem={renderItem}
         keyExtractor={(item) => item.id.toString()}
         ListEmptyComponent={<Text style={styles.emptyText}>No items in the cart.</Text>}
@@ -35,7 +40,7 @@ const BillDetails = ({ navigation }) => {
       />
       <Pressable
         style={styles.cartpay}
-        onPress={() => navigation.navigate('Payment', { cartItems, totalPrice })}
+        onPress={() => navigation.navigate('Payment', { cartItems: filteredCartItems, totalPrice })}
       >
         <Text style={styles.payText}>PAY</Text>
       </Pressable>
@@ -136,5 +141,3 @@ const styles = StyleSheet.create({
 });
 
 export default BillDetails;
-
-
