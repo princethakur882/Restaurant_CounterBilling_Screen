@@ -90,6 +90,36 @@ const HomeMenu = ({navigation}) => {
     </View>
   );
 
+  // const createOrder = async (cartItems) => {
+  //   try {
+  //     const orderRef = await firestore()
+  //       .collection('orders')
+  //       .add({
+  //         items: cartItems.map(item => ({
+  //           name: item.data.name,
+  //           price: item.data.price,
+  //           quantity: item.count,
+  //           imageUrl: item.data.imageUrl,
+  //         })),
+  //         total: totalPrice,
+  //         createdAt: firestore.FieldValue.serverTimestamp(),
+  //       });
+
+  //     console.log('Order added!', orderRef.id);
+  //     return orderRef.id;
+  //   } catch (error) {
+  //     console.error('Error creating order: ', error);
+  //   }
+  // };
+  // const handleCashPayment = async () => {
+  //   const orderId = await createOrder(cartItems);
+  //   if (orderId) {
+  //     printReceipt(orderId); 
+  //     resetCart();
+  //   }
+  // };
+
+
   const createOrder = async (cartItems) => {
     try {
       const orderRef = await firestore()
@@ -104,13 +134,27 @@ const HomeMenu = ({navigation}) => {
           total: totalPrice,
           createdAt: firestore.FieldValue.serverTimestamp(),
         });
-
+  
       console.log('Order added!', orderRef.id);
+  
+      // Update the quantity of items in the items collection
+      const batch = firestore().batch();
+      cartItems.forEach(item => {
+        const itemRef = firestore().collection('items').doc(item.id);
+        batch.update(itemRef, {
+          quantity: firestore.FieldValue.increment(-item.count),
+        });
+      });
+  
+      await batch.commit();
+      console.log('Items quantity updated!');
+  
       return orderRef.id;
     } catch (error) {
       console.error('Error creating order: ', error);
     }
   };
+  
   const handleCashPayment = async () => {
     const orderId = await createOrder(cartItems);
     if (orderId) {
@@ -118,6 +162,7 @@ const HomeMenu = ({navigation}) => {
       resetCart();
     }
   };
+  
 
   const renderCartItem = ({item}) =>
     item.count > 0 && (

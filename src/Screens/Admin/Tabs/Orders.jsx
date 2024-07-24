@@ -17,13 +17,11 @@ const Orders = () => {
         console.log('Total orders: ', querySnapshot.size);
         let tempData = [];
         querySnapshot.forEach(documentSnapshot => {
-          console.log('Order ID: ', documentSnapshot.id);
           tempData.push({
             orderId: documentSnapshot.id,
             data: documentSnapshot.data(),
           });
         });
-        console.log(JSON.stringify(tempData));
         setOrders(tempData);
       });
   };

@@ -15,7 +15,7 @@ import firestore from '@react-native-firebase/firestore';
 const Add = () => {
   const [imageData, setImageData] = useState(null);
   const [name, setName] = useState('');
-  const [quantity, setQuantity] = useState('');
+  const [quantity, setQuantity] = useState();
   const [price, setPrice] = useState(0);
   const [imageUrl, setImageUrl] = useState('');
   const requestCameraPermission = async () => {
@@ -64,18 +64,24 @@ const Add = () => {
   };
 
   const uploadItem = url => {
+    const numericQuantity = Number(quantity);
     firestore()
       .collection('items')
       .add({
         name: name,
         price: price,
-        quantity:quantity,
+        quantity:numericQuantity,
         imageUrl: url + '',
       })
       .then(() => {
         console.log('item added!');
         resetForm();
       });
+  };
+
+  const handleQuantityChange = (text) => {
+    const numericQuantity = Number(text);
+    setQuantity(numericQuantity);
   };
 
   const resetForm = () => {
@@ -110,12 +116,14 @@ const Add = () => {
           style={styles.inputStyle}
           value={price}
           onChangeText={text => setPrice(text)}
+          keyboardType="numeric"
         />
         <TextInput
           placeholder="Enter Item Quentity"
           style={styles.inputStyle}
           value={quantity}
-          onChangeText={text => setQuantity(text)}
+          onChangeText={handleQuantityChange}
+          keyboardType="numeric"
         />
         <TextInput
           placeholder="Enter Item Image URL"
