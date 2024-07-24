@@ -1,4 +1,4 @@
-import React, {useContext, useEffect, useRef, useState} from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -13,11 +13,11 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
-import {ApiContext} from '../../Context/ApiProvider';
+import { ApiContext } from '../../Context/ApiProvider';
 import AddToCartButton from './CartButton';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-const HomeMenu = ({navigation}) => {
+const HomeMenu = ({ navigation }) => {
   const {
     filteredData,
     searchQuery,
@@ -30,7 +30,7 @@ const HomeMenu = ({navigation}) => {
     decrement,
     count,
   } = useContext(ApiContext);
-  const {width: screenWidth} = useWindowDimensions();
+  const { width: screenWidth } = useWindowDimensions();
   const cartBarAnimation = useRef(new Animated.Value(0)).current;
   const modalSlideAnimation = useRef(new Animated.Value(0)).current;
   const [modalVisible, setModalVisible] = useState(false);
@@ -53,10 +53,10 @@ const HomeMenu = ({navigation}) => {
     outputRange: [100, 0],
   });
 
-  const renderItem = ({item}) => {
+  const renderItem = ({ item }) => {
     return (
       <View style={styles.itemContainer}>
-        <Image source={{uri: item.data.imageUrl}} style={styles.itemimg} />
+        <Image source={{ uri: item.data.imageUrl }} style={styles.itemimg} />
         <View style={styles.itemDetails}>
           <Text style={styles.itemName}>{item.data.name}</Text>
           <Text style={styles.itemPrice}>
@@ -79,48 +79,43 @@ const HomeMenu = ({navigation}) => {
       }, [])
     : [];
 
-  const renderRow = ({item}) => (
+  const renderRow = ({ item }) => (
     <View style={styles.rowContainer}>
       {item.map(i => (
-        <View key={i.id} style={{flex: 1}}>
-          {renderItem({item: i})}
+        <View key={i.id} style={{ flex: 1 }}>
+          {renderItem({ item: i })}
         </View>
       ))}
     </View>
   );
 
-  const renderCartItem = ({item}) =>
-    item.count > 0 && (
-      <View style={styles.cartItemContainer}>
-        <Text style={styles.itemName}>{item.data.name}</Text>
-        <View style={styles.counterContainer}>
-          <TouchableOpacity
-            onPress={() => decrement(item.id)}
-            style={styles.decrement}>
-            <Text style={styles.buttonText}>-</Text>
-          </TouchableOpacity>
-          <Text style={styles.countText}>{count(item.id)}</Text>
-          <TouchableOpacity
-            onPress={() => increment(item.id)}
-            style={styles.increment}>
-            <Text style={styles.buttonText}>+</Text>
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.itemPrice}>
-          {'\u20B9'}
-          {item.data.price * item.count}
-        </Text>
+  const renderCartItem = ({ item }) => (
+    <View style={styles.cartItemContainer}>
+      <Text style={styles.itemName}>{item.data.name}</Text>
+      <View style={styles.counterContainer}>
+        <TouchableOpacity onPress={() => decrement(item.id)} style={styles.decrement}>
+          <Text style={styles.buttonText}>-</Text>
+        </TouchableOpacity>
+        <Text style={styles.countText}>{count(item.id)}</Text>
+        <TouchableOpacity onPress={() => increment(item.id)} style={styles.increment}>
+          <Text style={styles.buttonText}>+</Text>
+        </TouchableOpacity>
       </View>
-    );
+      <Text style={styles.itemPrice}>{'\u20B9'}{item.data.price * item.count}</Text>
+    </View>
+  );
+
+  const toggleIconPress = () => {
+    setToggleIcon(!toggleIcon);
+  };
 
   const openModal = () => {
     setModalVisible(true);
     Animated.timing(modalSlideAnimation, {
       toValue: 1,
-      duration: 400,
+      duration: 300,
       useNativeDriver: true,
     }).start();
-    setToggleIcon(true);
   };
 
   const closeModal = () => {
@@ -131,12 +126,12 @@ const HomeMenu = ({navigation}) => {
     }).start(() => {
       setModalVisible(false);
     });
-    setToggleIcon(false);
+    toggleIconPress(); // Reset icon when modal is closed
   };
 
   const modalTranslateY = modalSlideAnimation.interpolate({
     inputRange: [0, 1],
-    outputRange: [500, 0],
+    outputRange: [500, 0], // Adjust the outputRange values as per your requirement
   });
 
   return (
@@ -172,7 +167,7 @@ const HomeMenu = ({navigation}) => {
         style={[
           styles.cartBar,
           {
-            transform: [{translateY: cartBarTranslateY}],
+            transform: [{ translateY: cartBarTranslateY }],
             opacity: cartBarAnimation,
           },
         ]}>
@@ -182,14 +177,10 @@ const HomeMenu = ({navigation}) => {
             {totalItems} Items | {'\u20B9'} {totalPrice}
           </Text>
           <Pressable onPress={openModal}>
-            <Icon
-              name={toggleIcon ? 'expand-less' : 'expand-more'}
-              size={28}
-              color={'white'}
-            />
+            <Icon name={toggleIcon ? "expand-less" : "expand-more"} size={28} color={'white'} />
           </Pressable>
         </View>
-        <View style={{flexDirection: 'row'}}>
+        <View style={{ flexDirection: 'row' }}>
           <Pressable
             style={styles.payButton}
             onPress={() => {
@@ -210,23 +201,23 @@ const HomeMenu = ({navigation}) => {
         visible={modalVisible}
         onRequestClose={closeModal}>
         <View style={styles.modalBackground}>
-          <Animated.View
-            style={[
-              styles.modalContainer,
-              {transform: [{translateY: modalTranslateY}]},
-            ]}>
-            <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-              <Text style={styles.closeButtonText}>X</Text>
-            </TouchableOpacity>
-            <ScrollView>
-              {cartItems.map(item => renderCartItem({item}))}
-              <View style={styles.totalContainer}>
-                <Text style={styles.totalText}>
-                  Total: {'\u20B9'}
-                  {totalPrice}
-                </Text>
-              </View>
+          <Animated.View style={[styles.modalContainer, { transform: [{ translateY: modalTranslateY }] }]}>
+            <Pressable
+              style={styles.closeButton}
+              onPress={closeModal}>
+              <Icon name="close" size={28} color={'white'} />
+            </Pressable>
+            <ScrollView style={styles.scrollView}>
+              {cartItems.map((item) => (
+                renderCartItem({ item })
+              ))}
             </ScrollView>
+            
+            <View style={styles.modalTotalContainer}>
+              <Text style={styles.cartText}>
+                {totalItems} Items | {'\u20B9'} {totalPrice}
+              </Text>
+            </View>
           </Animated.View>
         </View>
       </Modal>
@@ -293,56 +284,50 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     elevation: 2,
-    zIndex: 1,
   },
   itemContainer: {
-    width: 120,
-    margin: 4,
-    backgroundColor: '#ffffff',
+    flex: 1,
+    marginHorizontal: 4,
+    backgroundColor: '#fff',
     borderRadius: 8,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-    alignItems: 'center',
+    paddingBottom: 5,
   },
   itemimg: {
-    width: 100,
-    height: 80,
+    width: '100%',
+    height: 100,
     resizeMode: 'cover',
-    marginBottom: 8,
-    borderRadius: 5,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
   },
   itemDetails: {
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    marginTop: 5,
+    padding: 10,
   },
   itemName: {
     fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: '#000',
+    fontWeight: '600',
   },
   itemPrice: {
     fontSize: 14,
-    color: '#888',
-    textAlign: 'center',
+    fontWeight: '600',
+    color: '#FF7722',
+    marginTop: 5,
   },
   emptyText: {
-    fontSize: 18,
-    color: '#888',
     textAlign: 'center',
-    marginTop: 50,
+    marginTop: 20,
+    fontSize: 16,
   },
   cartBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 10,
-    margin: 10,
+    padding: 12,
     backgroundColor: '#FF7722',
     borderRadius: 8,
     elevation: 2,
@@ -376,31 +361,34 @@ const styles = StyleSheet.create({
   },
   modalBackground: {
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-end', // Align items to the bottom
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    // marginBottom:60,
-    paddingBottom: 60,
   },
   modalContainer: {
-    width: '95%',
+    width: '100%', // Full width
     backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    padding: 20,
     elevation: 10,
   },
   closeButton: {
-    width: 30,
+    position: 'absolute',
+    top: 10,
+    right: 10,
     backgroundColor: '#FF7722',
-    padding: 6.5,
-    borderRadius: 50,
-    marginLeft: 305,
-    marginBottom: 15,
+    padding: 5,
+    borderRadius: 5,
   },
-  closeButtonText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: 'bold',
+  scrollView: {
+    marginBottom: 20,
+  },
+  modalTotalContainer: {
+    borderTopWidth: 1,
+    borderTopColor: '#ddd',
+    paddingTop: 10,
+    marginTop: 10,
   },
   cartItemContainer: {
     flexDirection: 'row',
@@ -411,7 +399,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 5,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
@@ -443,20 +431,6 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     paddingHorizontal: 5,
     paddingVertical: 6,
-  },
-  totalContainer: {
-    marginTop: 20,
-    padding: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#ddd',
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-  },
-  totalText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
   },
 });
 

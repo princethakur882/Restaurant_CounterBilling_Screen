@@ -113,14 +113,17 @@ const HomeMenu = ({navigation}) => {
       </View>
     );
 
+  const toggleIconPress = () => {
+    setToggleIcon(!toggleIcon);
+  };
+
   const openModal = () => {
     setModalVisible(true);
     Animated.timing(modalSlideAnimation, {
       toValue: 1,
-      duration: 400,
+      duration: 300,
       useNativeDriver: true,
     }).start();
-    setToggleIcon(true);
   };
 
   const closeModal = () => {
@@ -131,12 +134,12 @@ const HomeMenu = ({navigation}) => {
     }).start(() => {
       setModalVisible(false);
     });
-    setToggleIcon(false);
+    toggleIconPress(); // Reset icon when modal is closed
   };
 
   const modalTranslateY = modalSlideAnimation.interpolate({
     inputRange: [0, 1],
-    outputRange: [500, 0],
+    outputRange: [500, 0], // Adjust the outputRange values as per your requirement
   });
 
   return (
@@ -376,14 +379,12 @@ const styles = StyleSheet.create({
   },
   modalBackground: {
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    // marginBottom:60,
-    paddingBottom: 60,
   },
   modalContainer: {
-    width: '95%',
+    width: '90%',
     backgroundColor: 'white',
     borderRadius: 10,
     padding: 10,

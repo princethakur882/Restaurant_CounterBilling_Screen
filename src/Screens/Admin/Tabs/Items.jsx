@@ -77,7 +77,7 @@ const Items = () => {
                   <Text style={styles.priceText}>{'\u20B9' + price}</Text>
                 </View>
                 <View style={styles.qty}>
-                  <Text style={styles.qtyText}>{quantity}</Text>
+                  <Text style={styles.qtyText}>{'Qty. ' + quantity}</Text>
                 </View>
               </View>
               <View style={{margin: 10}}>
@@ -136,6 +136,7 @@ const styles = StyleSheet.create({
     margin: 5,
   },
   nameView: {
+    justifyContent:'space-between',
     width: '53%',
     margin: 10,
   },
@@ -152,7 +153,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   priceText: {
-    paddingTop: 18,
+    paddingTop: 5,
     fontSize: 18,
     color: 'green',
     fontWeight: '700',
@@ -203,5 +204,17 @@ const styles = StyleSheet.create({
     color: '#FF7722',
     textAlign: 'center',
     paddingTop: 8,
+  },
+  qty:{
+    borderWidth:1,
+    borderRadius:5,
+    width:55,
+    backgroundColor:"#C5C6C7",
+    alignItems:'center',
+    height:30
+  },
+  qtyText:{
+    padding:2,
+    fontSize:13
   },
 });
