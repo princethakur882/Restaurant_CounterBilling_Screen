@@ -139,7 +139,7 @@ const ApiProvider = ({children}) => {
     return now.toLocaleTimeString(); 
   };
 
-  const printReceipt = async () => {
+  const printReceipt = async (orderId) => {
     try {
       if (!boundAddress) {
         alert("Printer not connected");
@@ -149,6 +149,14 @@ const ApiProvider = ({children}) => {
       const date = formatDate();
       const time = formatTime();
 
+      await BluetoothEscposPrinter.printerAlign(ALIGN.LEFT);
+      await BluetoothEscposPrinter.setBold(2);
+      await BluetoothEscposPrinter.printText(`Order No: #${orderId}\n`, {
+        codepage: 0,
+        widthtimes: 0.5,
+        heigthtimes: 0.5,
+        fonttype: FONTTYPE.FONT_A,
+      });
       await BluetoothEscposPrinter.printerAlign(ALIGN.RIGHT);
       await BluetoothEscposPrinter.setBold(2);
       await BluetoothEscposPrinter.printText(`Date:${date}\n${time}\n`, {

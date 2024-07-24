@@ -16,6 +16,7 @@ import {
 import {ApiContext} from '../../Context/ApiProvider';
 import AddToCartButton from './CartButton';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import firestore from '@react-native-firebase/firestore';
 
 const HomeMenu = ({navigation}) => {
   const {
@@ -89,6 +90,35 @@ const HomeMenu = ({navigation}) => {
     </View>
   );
 
+  const createOrder = async (cartItems) => {
+    try {
+      const orderRef = await firestore()
+        .collection('orders')
+        .add({
+          items: cartItems.map(item => ({
+            name: item.data.name,
+            price: item.data.price,
+            quantity: item.count,
+            imageUrl: item.data.imageUrl,
+          })),
+          total: totalPrice,
+          createdAt: firestore.FieldValue.serverTimestamp(),
+        });
+
+      console.log('Order added!', orderRef.id);
+      return orderRef.id;
+    } catch (error) {
+      console.error('Error creating order: ', error);
+    }
+  };
+  const handleCashPayment = async () => {
+    const orderId = await createOrder(cartItems);
+    if (orderId) {
+      printReceipt(orderId); 
+      resetCart();
+    }
+  };
+
   const renderCartItem = ({item}) =>
     item.count > 0 && (
       <View style={styles.cartItemContainer}>
@@ -138,7 +168,7 @@ const HomeMenu = ({navigation}) => {
     inputRange: [0, 1],
     outputRange: [500, 0],
   });
-
+console.log(cartItems);
   return (
     <View style={styles.container}>
       <View style={styles.login}>
@@ -192,10 +222,7 @@ const HomeMenu = ({navigation}) => {
         <View style={{flexDirection: 'row'}}>
           <Pressable
             style={styles.payButton}
-            onPress={() => {
-              printReceipt();
-              resetCart();
-            }}>
+            onPress={handleCashPayment}>
             <Text style={styles.payText}>CASH</Text>
           </Pressable>
           <Pressable
@@ -220,12 +247,12 @@ const HomeMenu = ({navigation}) => {
             </TouchableOpacity>
             <ScrollView>
               {cartItems.map(item => renderCartItem({item}))}
-              <View style={styles.totalContainer}>
+              {/* <View style={styles.totalContainer}>
                 <Text style={styles.totalText}>
                   Total: {'\u20B9'}
                   {totalPrice}
                 </Text>
-              </View>
+              </View> */}
             </ScrollView>
           </Animated.View>
         </View>
@@ -342,9 +369,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 10,
-    margin: 10,
+    // margin: 1,
+    marginBottom:0,
     backgroundColor: '#FF7722',
-    borderRadius: 8,
+    borderTopLeftRadius:6,
+    borderTopRightRadius:6,
     elevation: 2,
     zIndex: 1,
     flexDirection: 'row',
@@ -364,10 +393,12 @@ const styles = StyleSheet.create({
     paddingLeft: 5,
   },
   payButton: {
+    height:35,
     backgroundColor: 'white',
     padding: 5,
-    borderRadius: 10,
-    marginHorizontal: 4,
+    paddingTop:8,
+    borderRadius: 8,
+    marginHorizontal: 5,
   },
   payText: {
     fontSize: 15,
@@ -379,23 +410,25 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    // marginBottom:60,
-    paddingBottom: 60,
+    marginBottom:50,
+    // paddingBottom: 60,
+    paddingTop:50
   },
   modalContainer: {
-    width: '95%',
+    width: '100%',
     backgroundColor: 'white',
-    borderRadius: 10,
     padding: 10,
-    elevation: 10,
+    // elevation: 10,
+    borderTopLeftRadius:15,
+    borderTopRightRadius:15,
   },
   closeButton: {
     width: 30,
-    backgroundColor: '#FF7722',
+    backgroundColor: 'gray',
     padding: 6.5,
     borderRadius: 50,
-    marginLeft: 305,
-    marginBottom: 15,
+    marginLeft: 340,
+    marginBottom: 5,
   },
   closeButtonText: {
     color: 'white',

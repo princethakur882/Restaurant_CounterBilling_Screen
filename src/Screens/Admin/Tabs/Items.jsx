@@ -44,11 +44,11 @@ const Items = () => {
       });
   };
 
-  const Homerender = () => {
-    useEffect(() => {
-      getItems();
-    }, []);
-  };
+  // const Homerender = () => {
+  //   useEffect(() => {
+  //     getItems();
+  //   }, []);
+  // };
 
   return (
     <View style={styles.container}>
@@ -206,7 +206,6 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   qty:{
-    borderWidth:1,
     borderRadius:5,
     width:55,
     backgroundColor:"#C5C6C7",
@@ -214,7 +213,9 @@ const styles = StyleSheet.create({
     height:30
   },
   qtyText:{
-    padding:2,
-    fontSize:13
+    paddingTop:6,
+    fontSize:13,
+    color:'black',
+    fontWeight:'bold'
   },
 });

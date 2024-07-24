@@ -8,7 +8,7 @@ const Payment = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Payment Screen</Text>
-      <Button title="Print Receipt" onPress={printReceipt} disabled={loading || !boundAddress} />
+      <Button title="Print Receipt" onPress={printReceipt(orderId)} disabled={loading || !boundAddress} />
     </View>
   );
 };
