@@ -167,7 +167,8 @@ const HomeMenu = ({navigation}) => {
   const renderCartItem = ({item}) =>
     item.count > 0 && (
       <View style={styles.cartItemContainer}>
-        <Text style={styles.itemName}>{item.data.name}</Text>
+        <Image source={{uri: item.data.imageUrl}} style={styles.itembillImage} />
+        <Text style={styles.billitemName}>{item.data.name}</Text>
         <View style={styles.counterContainer}>
           <TouchableOpacity
             onPress={() => decrement(item.id)}
@@ -181,7 +182,7 @@ const HomeMenu = ({navigation}) => {
             <Text style={styles.buttonText}>+</Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.itemPrice}>
+        <Text style={styles.itembillPrice}>
           {'\u20B9'}
           {item.data.price * item.count}
         </Text>
@@ -235,7 +236,7 @@ console.log(cartItems);
         onChangeText={text => setSearchQuery(text)}
       />
       <FlatList
-        style={styles.flatList}
+        style={[styles.flatList]}
         data={rows}
         renderItem={renderRow}
         keyExtractor={(item, index) => index.toString()}
@@ -397,10 +398,23 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#000',
   },
+  billitemName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'left',
+    color: '#000',
+    width:'30%',
+  },
   itemPrice: {
     fontSize: 14,
     color: '#888',
     textAlign: 'center',
+  },
+  itembillPrice: {
+    fontSize: 14,
+    color: '#888',
+    textAlign: 'center',
+    width:'15%'
   },
   emptyText: {
     fontSize: 18,
@@ -535,6 +549,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  itembillImage: {
+    width: '15%',
+    height: 45,
+    borderRadius: 5,
+    margin: 5,
   },
 });
 

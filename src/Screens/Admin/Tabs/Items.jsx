@@ -65,6 +65,7 @@ const Items = () => {
         </TouchableOpacity>
       </View>
       <FlatList
+      style={{marginBottom:60}}
         data={items}
         renderItem={({item}) => {
           const {name, price, imageUrl, quantity} = item.data;

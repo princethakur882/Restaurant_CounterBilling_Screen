@@ -68,18 +68,24 @@ const EditItem = ({navigation}) => {
   };
 
   const uploadItem = () => {
+    const numericQuantity = Number(quantity);
     firestore()
       .collection('items')
       .doc(route.params.id)
       .update({
         name: name,
         price: price,
-        quantity: quantity,
+        quantity: numericQuantity,
         imageUrl: route.params.data.imageUrl + '',
       })
       .then(() => {
         navigation.goBack();
       });
+  };
+
+  const handleQuantityChange = (text) => {
+    const numericQuantity = Number(text);
+    setQuantity(numericQuantity);
   };
 
   return (
@@ -106,12 +112,14 @@ const EditItem = ({navigation}) => {
           style={styles.inputStyle}
           value={price}
           onChangeText={text => setPrice(text)}
+          keyboardType="numeric"
         />
         <TextInput
-          placeholder="Enter Item Quantity"
+          placeholder="Enter Item Quentity"
           style={styles.inputStyle}
           value={quantity}
-          onChangeText={text => setQuantity(text)}
+          onChangeText={handleQuantityChange}
+          keyboardType="numeric"
         />
         <TextInput
           placeholder="Enter Item Image URL"

@@ -1,7 +1,6 @@
 import {View, Text, StyleSheet, TouchableOpacity, Image} from 'react-native';
 import React, {useState} from 'react';
 import Items from './Tabs/Items';
-import Transections from './Tabs/User';
 import Add from './Tabs/Add';
 import Orders from './Tabs/Orders';
 import Icon from 'react-native-vector-icons/MaterialIcons';
