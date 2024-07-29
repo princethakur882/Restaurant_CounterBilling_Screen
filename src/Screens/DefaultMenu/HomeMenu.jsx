@@ -56,7 +56,7 @@ const HomeMenu = ({navigation}) => {
 
   const renderItem = ({item}) => {
     return (
-      <View style={styles.itemContainer}>
+      <View style={styles.itemContainer} >
         <Image source={{uri: item.data.imageUrl}} style={styles.itemimg} />
         <View style={styles.itemDetails}>
           <Text style={styles.itemName}>{item.data.name}</Text>
@@ -133,6 +133,7 @@ const HomeMenu = ({navigation}) => {
           })),
           total: totalPrice,
           createdAt: firestore.FieldValue.serverTimestamp(),
+          status: 'received',
         });
   
       console.log('Order added!', orderRef.id);

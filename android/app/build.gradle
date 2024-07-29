@@ -87,9 +87,15 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "1.0"
+        versionName "2.0"
     }
     signingConfigs {
+        release{
+            storeFile file('my_key.keystore')
+            storePassword 'advanture'
+            keyAlias 'my_key'
+            keyPassword 'advanture'
+        }
         debug {
             storeFile file('debug.keystore')
             storePassword 'android'

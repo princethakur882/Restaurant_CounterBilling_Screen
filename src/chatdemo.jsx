@@ -1,437 +1,381 @@
-import React, { useContext, useEffect, useRef, useState } from 'react';
+
+
+import React, { useEffect, useState } from 'react';
 import {
-  StyleSheet,
   View,
   Text,
-  Image,
+  StyleSheet,
   FlatList,
-  TextInput,
-  useWindowDimensions,
-  Pressable,
+  Image,
   TouchableOpacity,
-  Animated,
-  Modal,
-  ScrollView,
 } from 'react-native';
-import { ApiContext } from '../../Context/ApiProvider';
-import AddToCartButton from './CartButton';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import firestore from '@react-native-firebase/firestore';
+import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 
-const HomeMenu = ({ navigation }) => {
-  const {
-    filteredData,
-    searchQuery,
-    setSearchQuery,
-    cartItems,
-    totalPrice,
-    printReceipt,
-    resetCart,
-    increment,
-    decrement,
-    count,
-  } = useContext(ApiContext);
-  const { width: screenWidth } = useWindowDimensions();
-  const cartBarAnimation = useRef(new Animated.Value(0)).current;
-  const modalSlideAnimation = useRef(new Animated.Value(0)).current;
-  const [modalVisible, setModalVisible] = useState(false);
-  const [toggleIcon, setToggleIcon] = useState(false);
+const Tab = createMaterialTopTabNavigator();
 
-  const totalItems = cartItems.reduce((acc, curr) => {
-    return acc + curr.count;
-  }, 0);
-
-  useEffect(() => {
-    Animated.timing(cartBarAnimation, {
-      toValue: totalItems > 0 ? 1 : 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  }, [totalItems]);
-
-  const cartBarTranslateY = cartBarAnimation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [100, 0],
-  });
-
-  const renderItem = ({ item }) => {
-    return (
-      <View style={styles.itemContainer}>
-        <Image source={{ uri: item.data.imageUrl }} style={styles.itemimg} />
-        <View style={styles.itemDetails}>
-          <Text style={styles.itemName}>{item.data.name}</Text>
-          <Text style={styles.itemPrice}>
-            {'\u20B9'}
-            {item.data.price}
-          </Text>
-        </View>
-        <AddToCartButton item={item} />
+const OrdersReceived = ({ orders, handleAccept }) => {
+  const renderOrderItem = ({ item }) => (
+    <View style={styles.orderItem}>
+      <Text style={styles.totalText}>Order No: {item.orderId}</Text>
+      <FlatList
+        data={item.data.items}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={renderOrderProduct}
+      />
+      <Text style={styles.totalText}>Total: {item.data.total}</Text>
+      <Text style={styles.dateText}>
+        Date: {item.data.createdAt?.toDate().toString()}
+      </Text>
+      <View style={{ flexDirection: 'row' }}>
+        <TouchableOpacity style={styles.acceptButton} onPress={() => handleAccept(item.orderId)}>
+          <Text style={styles.acceptButtonText}>Accept</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.declineButton} onPress={() => {}}>
+          <Text style={styles.declineButtonText}>Decline</Text>
+        </TouchableOpacity>
       </View>
-    );
-  };
-
-  const itemsPerRow = Math.floor(screenWidth / 120);
-
-  const rows = filteredData
-    ? filteredData.reduce((acc, curr, index) => {
-        if (index % itemsPerRow === 0) acc.push([curr]);
-        else acc[acc.length - 1].push(curr);
-        return acc;
-      }, [])
-    : [];
-
-  const renderRow = ({ item }) => (
-    <View style={styles.rowContainer}>
-      {item.map(i => (
-        <View key={i.id} style={{ flex: 1 }}>
-          {renderItem({ item: i })}
-        </View>
-      ))}
     </View>
   );
 
-  const renderCartItem = ({ item }) => (
-    <View style={styles.cartItemContainer}>
-      <Text style={styles.itemName}>{item.data.name}</Text>
-      <View style={styles.counterContainer}>
-        <TouchableOpacity onPress={() => decrement(item.id)} style={styles.decrement}>
-          <Text style={styles.buttonText}>-</Text>
-        </TouchableOpacity>
-        <Text style={styles.countText}>{count(item.id)}</Text>
-        <TouchableOpacity onPress={() => increment(item.id)} style={styles.increment}>
-          <Text style={styles.buttonText}>+</Text>
-        </TouchableOpacity>
+  const renderOrderProduct = ({ item }) => (
+    <View style={styles.itemView}>
+      <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
+      <View>
+        <Text style={styles.nameText}>{item.name}</Text>
+        <Text style={styles.nameText}>
+          {'Price: ' + item.price + ', Qty: ' + item.quantity}
+        </Text>
       </View>
-      <Text style={styles.itemPrice}>{'\u20B9'}{item.data.price * item.count}</Text>
     </View>
   );
-
-  const toggleIconPress = () => {
-    setToggleIcon(!toggleIcon);
-  };
-
-  const openModal = () => {
-    setModalVisible(true);
-    Animated.timing(modalSlideAnimation, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const closeModal = () => {
-    Animated.timing(modalSlideAnimation, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      setModalVisible(false);
-    });
-    toggleIconPress(); // Reset icon when modal is closed
-  };
-
-  const modalTranslateY = modalSlideAnimation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [500, 0], // Adjust the outputRange values as per your requirement
-  });
 
   return (
     <View style={styles.container}>
-      <View style={styles.login}>
-        <TouchableOpacity
-          style={styles.btn}
-          onPress={() => navigation.navigate('HomeMenu')}>
-          <Text style={styles.text}>Menu</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.adminbtn}
-          onPress={() => navigation.navigate('AdminLogIn')}>
-          <Text style={styles.admintext}>Admin</Text>
-        </TouchableOpacity>
-      </View>
-      <TextInput
-        style={styles.searchBar}
-        placeholder="Search"
-        value={searchQuery}
-        onChangeText={text => setSearchQuery(text)}
-      />
       <FlatList
-        style={styles.flatList}
-        data={rows}
-        renderItem={renderRow}
+        style={{ marginBottom: 60 }}
+        data={orders.filter(order => order.data.status === 'received')}
         keyExtractor={(item, index) => index.toString()}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>No data available.</Text>
-        }
+        renderItem={renderOrderItem}
       />
-      <Animated.View
-        style={[
-          styles.cartBar,
-          {
-            transform: [{ translateY: cartBarTranslateY }],
-            opacity: cartBarAnimation,
-          },
-        ]}>
-        <View style={styles.outercart}>
-          <Icon name="shopping-cart" size={28} color={'white'} />
-          <Text style={styles.cartText}>
-            {totalItems} Items | {'\u20B9'} {totalPrice}
-          </Text>
-          <Pressable onPress={openModal}>
-            <Icon name={toggleIcon ? "expand-less" : "expand-more"} size={28} color={'white'} />
-          </Pressable>
-        </View>
-        <View style={{ flexDirection: 'row' }}>
-          <Pressable
-            style={styles.payButton}
-            onPress={() => {
-              printReceipt();
-              resetCart();
-            }}>
-            <Text style={styles.payText}>CASH</Text>
-          </Pressable>
-          <Pressable
-            style={styles.payButton}
-            onPress={() => navigation.navigate('BillDetails')}>
-            <Text style={styles.payText}>PAY</Text>
-          </Pressable>
-        </View>
-      </Animated.View>
-      <Modal
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={closeModal}>
-        <View style={styles.modalBackground}>
-          <Animated.View style={[styles.modalContainer, { transform: [{ translateY: modalTranslateY }] }]}>
-            <Pressable
-              style={styles.closeButton}
-              onPress={closeModal}>
-              <Icon name="close" size={28} color={'white'} />
-            </Pressable>
-            <ScrollView style={styles.scrollView}>
-              {cartItems.map((item) => (
-                renderCartItem({ item })
-              ))}
-            </ScrollView>
-            
-            <View style={styles.modalTotalContainer}>
-              <Text style={styles.cartText}>
-                {totalItems} Items | {'\u20B9'} {totalPrice}
-              </Text>
-            </View>
-          </Animated.View>
-        </View>
-      </Modal>
     </View>
   );
 };
+
+const PendingOrder = ({ orders, handleCancel, handleComplete }) => {
+  const renderOrderItem = ({ item }) => (
+    <View style={styles.orderItem}>
+      <Text style={styles.totalText}>Order No: {item.orderId}</Text>
+      <FlatList
+        data={item.data.items}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={renderOrderProduct}
+      />
+      <Text style={styles.totalText}>Total: {item.data.total}</Text>
+      <Text style={styles.dateText}>
+        Date: {item.data.createdAt?.toDate().toString()}
+      </Text>
+      <View style={{ flexDirection: 'row' }}>
+        <TouchableOpacity style={styles.completeButton} onPress={() => handleComplete(item.orderId)}>
+          <Text style={styles.completeButtonText}>Complete</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.cancelButton} onPress={() => handleCancel(item.orderId)}>
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderOrderProduct = ({ item }) => (
+    <View style={styles.itemView}>
+      <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
+      <View>
+        <Text style={styles.nameText}>{item.name}</Text>
+        <Text style={styles.nameText}>
+          {'Price: ' + item.price + ', Qty: ' + item.quantity}
+        </Text>
+      </View>
+    </View>
+  );
+
+  return (
+    <View style={styles.container}>
+      <FlatList
+        style={{ marginBottom: 60 }}
+        data={orders.filter(order => order.data.status === 'pending')}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={renderOrderItem}
+      />
+    </View>
+  );
+};
+
+const OrderCompleted = ({ orders }) => {
+  const renderOrderItem = ({ item }) => (
+    <View style={styles.orderItem}>
+      <Text style={styles.totalText}>Order No: {item.orderId}</Text>
+      <FlatList
+        data={item.data.items}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={renderOrderProduct}
+      />
+      <Text style={styles.totalText}>Total: {item.data.total}</Text>
+      <Text style={styles.dateText}>
+        Date: {item.data.createdAt?.toDate().toString()}
+      </Text>
+    </View>
+  );
+
+  const renderOrderProduct = ({ item }) => (
+    <View style={styles.itemView}>
+      <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
+      <View>
+        <Text style={styles.nameText}>{item.name}</Text>
+        <Text style={styles.nameText}>
+          {'Price: ' + item.price + ', Qty: ' + item.quantity}
+        </Text>
+      </View>
+    </View>
+  );
+
+  return (
+    <View style={styles.container}>
+      <FlatList
+        style={{ marginBottom: 60 }}
+        data={orders.filter(order => order.data.status === 'completed')}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={renderOrderItem}
+      />
+    </View>
+  );
+};
+
+const TabLabel = ({ title, count }) => (
+  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+    <Text style={{color:'#FF7722'}}>{title}</Text>
+    {count > 0 && (
+      <View style={styles.countBadge}>
+        <Text style={styles.countBadgeText}>{count}</Text>
+      </View>
+    )}
+  </View>
+);
+
+const MyTabs = () => {
+  const [orders, setOrders] = useState([]);
+  const [receivedCount, setReceivedCount] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    getAllOrders();
+  }, []);
+
+  const getAllOrders = async () => {
+    const snapshot = await firestore().collection('orders').get();
+    let tempData = [];
+    snapshot.forEach(documentSnapshot => {
+      tempData.push({
+        orderId: documentSnapshot.id,
+        data: documentSnapshot.data(),
+      });
+    });
+    setOrders(tempData);
+    setReceivedCount(tempData.filter(order => order.data.status === 'received').length);
+    setPendingCount(tempData.filter(order => order.data.status === 'pending').length);
+  };
+
+  const handleAccept = async (orderId) => {
+    await firestore().collection('orders').doc(orderId).update({ status: 'pending' });
+    setOrders(prevOrders => prevOrders.map(order => 
+      order.orderId === orderId ? { ...order, data: { ...order.data, status: 'pending' } } : order
+    ));
+    setReceivedCount(prevCount => prevCount - 1);
+    setPendingCount(prevCount => prevCount + 1);
+  };
+
+  const handleCancel = async (orderId) => {
+    await firestore().collection('orders').doc(orderId).update({ status: 'canceled' });
+    setOrders(prevOrders => prevOrders.map(order => 
+      order.orderId === orderId ? { ...order, data: { ...order.data, status: 'canceled' } } : order
+    ));
+    setPendingCount(prevCount => prevCount - 1);
+  };
+
+  const handleComplete = async (orderId) => {
+    await firestore().collection('orders').doc(orderId).update({ status: 'completed' });
+    setOrders(prevOrders => prevOrders.map(order => 
+      order.orderId === orderId ? { ...order, data: { ...order.data, status: 'completed' } } : order
+    ));
+    setPendingCount(prevCount => prevCount - 1);
+  };
+
+
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarActiveTintColor: '#FF7722',
+        tabBarInactiveTintColor: '#777',
+        tabBarLabelStyle: { fontSize: 15, fontWeight: 'bold' },
+        tabBarStyle: { backgroundColor: 'lightgray' },
+        tabBarIndicatorStyle: { backgroundColor: '#FF7722', height: 4 },
+        tabBarLabel: ({ color }) => {
+          let title;
+          let count;
+          switch (route.name) {
+            case 'Received':
+              title = 'RECEIVED';
+              count = receivedCount;
+              break;
+            case 'Pending':
+              title = 'PENDING';
+              count = pendingCount;
+              break;
+            case 'Completed':
+              title = 'COMPLETED';
+              count = 0;
+              break;
+          }
+          return <TabLabel title={title} count={count} />;
+        },
+      })}>
+      <Tab.Screen name="Received">
+        {() => <OrdersReceived orders={orders} handleAccept={handleAccept} />}
+      </Tab.Screen>
+      <Tab.Screen name="Pending">
+        {() => <PendingOrder orders={orders} handleCancel={handleCancel} handleComplete={handleComplete} />}
+      </Tab.Screen>
+      <Tab.Screen name="Completed">
+        {() => <OrderCompleted orders={orders} />}
+      </Tab.Screen>
+    </Tab.Navigator>
+  );
+};
+
+export default MyTabs;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
   },
-  login: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  btn: {
-    backgroundColor: '#FF7722',
-    height: 40,
-    width: '45%',
+  orderItem: {
+    width: '90%',
     borderRadius: 10,
-    margin: 10,
-  },
-  adminbtn: {
-    backgroundColor: '#FFF',
-    height: 40,
-    width: '45%',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#FF7722',
-    margin: 10,
-  },
-  text: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#fff',
-    textAlign: 'center',
-    paddingTop: 8,
-  },
-  admintext: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FF7722',
-    textAlign: 'center',
-    paddingTop: 8,
-  },
-  flatList: {
-    paddingTop: 60,
-    paddingHorizontal: 4,
-  },
-  rowContainer: {
-    flexDirection: 'row',
-    marginBottom: 16,
-  },
-  searchBar: {
-    position: 'absolute',
-    top: 50,
-    left: 0,
-    right: 0,
+    elevation: 5,
+    alignSelf: 'center',
+    backgroundColor: '#fff',
+    marginTop: 20,
+    marginBottom: 10,
     padding: 10,
+  },
+  itemImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 10,
+  },
+  itemView: {
     margin: 10,
-    backgroundColor: '#fff',
-    borderColor: '#FF7722',
-    borderWidth: 1,
-    borderRadius: 8,
-    elevation: 2,
-  },
-  itemContainer: {
-    flex: 1,
-    marginHorizontal: 4,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-    paddingBottom: 5,
-  },
-  itemimg: {
     width: '100%',
-    height: 100,
-    resizeMode: 'cover',
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  itemDetails: {
-    padding: 10,
-  },
-  itemName: {
+  nameText: {
     fontSize: 16,
     fontWeight: '600',
-  },
-  itemPrice: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FF7722',
+    color: '#000',
+    marginLeft: 20,
     marginTop: 5,
   },
-  emptyText: {
-    textAlign: 'center',
-    marginTop: 20,
+  totalText: {
     fontSize: 16,
-  },
-  cartBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 12,
-    backgroundColor: '#FF7722',
-    borderRadius: 8,
-    elevation: 2,
-    zIndex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    textAlign: 'center',
-    alignItems: 'center',
-    height: 50,
-  },
-  outercart: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  cartText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: 'white',
-    paddingLeft: 5,
-  },
-  payButton: {
-    backgroundColor: 'white',
-    padding: 5,
-    borderRadius: 10,
-    marginHorizontal: 4,
-  },
-  payText: {
-    fontSize: 15,
-    fontWeight: '900',
-    color: '#FF7722',
-  },
-  modalBackground: {
-    flex: 1,
-    justifyContent: 'flex-end', // Align items to the bottom
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContainer: {
-    width: '100%', // Full width
-    backgroundColor: 'white',
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
-    padding: 20,
-    elevation: 10,
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: '#FF7722',
-    padding: 5,
-    borderRadius: 5,
-  },
-  scrollView: {
-    marginBottom: 20,
-  },
-  modalTotalContainer: {
-    borderTopWidth: 1,
-    borderTopColor: '#ddd',
-    paddingTop: 10,
+    fontWeight: 'bold',
     marginTop: 10,
   },
-  cartItemContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  dateText: {
+    fontSize: 14,
+    color: '#888',
+    marginTop: 5,
+  },
+  acceptButton: {
+    width: '40%',
+    height: 40,
+    borderRadius: 5,
+    backgroundColor: 'green',
+    color: 'white',
     alignItems: 'center',
+    justifyContent: 'center',
+    margin: 20,
+    marginLeft: 14,
+  },
+  acceptButtonText: {
+    color: 'white',
+    fontWeight: '800',
+    fontSize: 18,
+  },
+  declineButton: {
+    width: '40%',
+    height: 40,
+    borderRadius: 5,
+    backgroundColor: 'red',
+    color: 'white',
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: 20,
+  },
+  declineButtonText: {
+    color: 'white',
+    fontWeight: '800',
+    fontSize: 18,
+  },
+  completeButton: {
+    width: '40%',
+    height: 40,
+    borderRadius: 5,
+    backgroundColor: 'blue',
+    color: 'white',
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: 20,
+    marginLeft: 14,
+  },
+  completeButtonText: {
+    color: 'white',
+    fontWeight: '800',
+    fontSize: 18,
+  },
+  cancelButton: {
+    width: '40%',
+    height: 40,
+    borderRadius: 5,
+    backgroundColor: 'red',
+    color: 'white',
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: 20,
+  },
+  cancelButtonText: {
+    color: 'white',
+    fontWeight: '800',
+    fontSize: 18,
+  },
+  pendingHeader: {
+    fontSize: 20,
+    fontWeight: 'bold',
     padding: 10,
-    marginBottom: 10,
-    backgroundColor: '#fff',
-    borderRadius: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    textAlign: 'center',
+    backgroundColor: 'lightgray',
   },
-  counterContainer: {
-    borderWidth: 1.5,
-    borderColor: '#FF7722',
-    borderRadius: 5,
-    flexDirection: 'row',
+  countBadge: {
+    backgroundColor: '#FF7722',
+    borderRadius: 50,
+    padding: 5,
+    marginLeft: 5,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  decrement: {
-    padding: 5,
-  },
-  increment: {
-    padding: 5,
-  },
-  buttonText: {
-    color: '#FF7722',
-    fontSize: 16,
-    fontWeight: '900',
-    paddingHorizontal: 8,
-  },
-  countText: {
-    color: '#FF7722',
-    padding: 8,
-    backgroundColor: '#fff',
-    fontSize: 15.5,
-    fontWeight: '900',
-    paddingHorizontal: 5,
-    paddingVertical: 6,
+  countBadgeText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
 
-export default HomeMenu;
