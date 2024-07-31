@@ -90,36 +90,6 @@ const HomeMenu = ({navigation}) => {
     </View>
   );
 
-  // const createOrder = async (cartItems) => {
-  //   try {
-  //     const orderRef = await firestore()
-  //       .collection('orders')
-  //       .add({
-  //         items: cartItems.map(item => ({
-  //           name: item.data.name,
-  //           price: item.data.price,
-  //           quantity: item.count,
-  //           imageUrl: item.data.imageUrl,
-  //         })),
-  //         total: totalPrice,
-  //         createdAt: firestore.FieldValue.serverTimestamp(),
-  //       });
-
-  //     console.log('Order added!', orderRef.id);
-  //     return orderRef.id;
-  //   } catch (error) {
-  //     console.error('Error creating order: ', error);
-  //   }
-  // };
-  // const handleCashPayment = async () => {
-  //   const orderId = await createOrder(cartItems);
-  //   if (orderId) {
-  //     printReceipt(orderId); 
-  //     resetCart();
-  //   }
-  // };
-
-
   const createOrder = async (cartItems) => {
     try {
       const orderRef = await firestore()
@@ -270,6 +240,11 @@ console.log(cartItems);
           <Pressable
             style={styles.payButton}
             onPress={handleCashPayment}>
+            <Text style={styles.payText}>CREDIT</Text>
+          </Pressable>
+          <Pressable
+            style={styles.payButton}
+            onPress={handleCashPayment}>
             <Text style={styles.payText}>CASH</Text>
           </Pressable>
           <Pressable
@@ -294,12 +269,6 @@ console.log(cartItems);
             </TouchableOpacity>
             <ScrollView>
               {cartItems.map(item => renderCartItem({item}))}
-              {/* <View style={styles.totalContainer}>
-                <Text style={styles.totalText}>
-                  Total: {'\u20B9'}
-                  {totalPrice}
-                </Text>
-              </View> */}
             </ScrollView>
           </Animated.View>
         </View>

@@ -6,6 +6,7 @@ import Orders from './Tabs/Orders';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Icons from 'react-native-vector-icons/FontAwesome5';
 import User from './Tabs/User';
+import Party from './Tabs/Party';
 
 
 const AdminDashboard = () => {
@@ -15,10 +16,12 @@ const AdminDashboard = () => {
       {selectedTab == 0 ? (
         <Items />
       ) : selectedTab == 1 ? (
-        <Add />
+        <Party />
       ) : selectedTab == 2 ? (
-        <Orders />
+        <Add />
       ) : selectedTab == 3 ? (
+        <Orders />
+      ) : selectedTab == 4 ? (
         <User />
       ) : (
         <Notifications />
@@ -42,8 +45,8 @@ const AdminDashboard = () => {
             setSelectedTab(1);
           }}>
           <Icons
-            name="plus-circle"
-            size={26}
+            name="user-tie"
+            size={24}
             color={selectedTab == 1 ? '#FF7722' : 'gray'}
           />
         </TouchableOpacity>
@@ -52,10 +55,21 @@ const AdminDashboard = () => {
           onPress={() => {
             setSelectedTab(2);
           }}>
+          <Icons
+            name="plus-circle"
+            size={30}
+            color={selectedTab == 2 ? '#FF7722' : 'gray'}
+          />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.bottomTab}
+          onPress={() => {
+            setSelectedTab(3);
+          }}>
           <Icon
             name="shopping-cart"
             size={28}
-            color={selectedTab == 2 ? '#FF7722' : 'gray'}
+            color={selectedTab == 3 ? '#FF7722' : 'gray'}
           />
         </TouchableOpacity>
         <TouchableOpacity
@@ -66,7 +80,7 @@ const AdminDashboard = () => {
           <Icons
             name="user-alt"
             size={23}
-            color={selectedTab == 3 ? '#FF7722' : 'gray'}
+            color={selectedTab == 4 ? '#FF7722' : 'gray'}
           />
         </TouchableOpacity>
       </View>
