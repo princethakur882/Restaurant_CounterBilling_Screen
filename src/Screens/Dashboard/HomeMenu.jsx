@@ -13,9 +13,11 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
-import {ApiContext} from '../../Context/ApiProvider';
-import AddToCartButton from './CartButton';
+import {ApiContext} from '../Context/ApiProvider';
+import AddToCartButton from '../Screens/DefaultMenu/CartButton';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import firestore from '@react-native-firebase/firestore';
+import Icons from 'react-native-vector-icons/MaterialIcons';
 
 const HomeMenu = ({navigation}) => {
   const {
@@ -34,11 +36,27 @@ const HomeMenu = ({navigation}) => {
   const cartBarAnimation = useRef(new Animated.Value(0)).current;
   const modalSlideAnimation = useRef(new Animated.Value(0)).current;
   const [modalVisible, setModalVisible] = useState(false);
+  const [creditModalVisible, setCreditModalVisible] = useState(false);
   const [toggleIcon, setToggleIcon] = useState(false);
+  const [parties, setParties] = useState([]);
+  const [selectedParty, setSelectedParty] = useState(null);
 
   const totalItems = cartItems.reduce((acc, curr) => {
     return acc + curr.count;
   }, 0);
+
+  useEffect(() => {
+    const fetchParties = async () => {
+      const snapshot = await firestore().collection('parties').get();
+      const fetchedParties = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setParties(fetchedParties);
+    };
+
+    fetchParties();
+  }, []);
 
   useEffect(() => {
     Animated.timing(cartBarAnimation, {
@@ -89,10 +107,71 @@ const HomeMenu = ({navigation}) => {
     </View>
   );
 
+  const createOrder = async cartItems => {
+    try {
+      const orderRef = await firestore()
+        .collection('orders')
+        .add({
+          items: cartItems.map(item => ({
+            name: item.data.name,
+            price: item.data.price,
+            quantity: item.count,
+            imageUrl: item.data.imageUrl,
+          })),
+          total: totalPrice,
+          createdAt: firestore.FieldValue.serverTimestamp(),
+          status: 'received',
+          party: selectedParty
+            ? firestore().collection('parties').doc(selectedParty.id)
+            : null,
+        });
+
+      console.log('Order added!', orderRef.id);
+
+      // Update the quantity of items in the items collection
+      const batch = firestore().batch();
+      cartItems.forEach(item => {
+        const itemRef = firestore().collection('items').doc(item.id);
+        batch.update(itemRef, {
+          quantity: firestore.FieldValue.increment(-item.count),
+        });
+      });
+
+      await batch.commit();
+      console.log('Items quantity updated!');
+
+      return orderRef.id;
+    } catch (error) {
+      console.error('Error creating order: ', error);
+    }
+  };
+
+  const handleCashPayment = async () => {
+    const orderId = await createOrder(cartItems);
+    if (orderId) {
+      printReceipt(orderId);
+      resetCart();
+    }
+  };
+
+  const handleCreditPayment = () => {
+    setCreditModalVisible(true);
+  };
+
+  const handleSelectParty = party => {
+    setSelectedParty(party);
+    setCreditModalVisible(false);
+    handleCashPayment();
+  };
+
   const renderCartItem = ({item}) =>
     item.count > 0 && (
       <View style={styles.cartItemContainer}>
-        <Text style={styles.itemName}>{item.data.name}</Text>
+        <Image
+          source={{uri: item.data.imageUrl}}
+          style={styles.itembillImage}
+        />
+        <Text style={styles.billitemName}>{item.data.name}</Text>
         <View style={styles.counterContainer}>
           <TouchableOpacity
             onPress={() => decrement(item.id)}
@@ -106,24 +185,21 @@ const HomeMenu = ({navigation}) => {
             <Text style={styles.buttonText}>+</Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.itemPrice}>
+        <Text style={styles.itembillPrice}>
           {'\u20B9'}
           {item.data.price * item.count}
         </Text>
       </View>
     );
 
-  const toggleIconPress = () => {
-    setToggleIcon(!toggleIcon);
-  };
-
   const openModal = () => {
     setModalVisible(true);
     Animated.timing(modalSlideAnimation, {
       toValue: 1,
-      duration: 300,
+      duration: 400,
       useNativeDriver: true,
     }).start();
+    setToggleIcon(true);
   };
 
   const closeModal = () => {
@@ -134,14 +210,14 @@ const HomeMenu = ({navigation}) => {
     }).start(() => {
       setModalVisible(false);
     });
-    toggleIconPress(); // Reset icon when modal is closed
+    setToggleIcon(false);
   };
 
   const modalTranslateY = modalSlideAnimation.interpolate({
     inputRange: [0, 1],
-    outputRange: [500, 0], // Adjust the outputRange values as per your requirement
+    outputRange: [500, 0],
   });
-
+  console.log(cartItems);
   return (
     <View style={styles.container}>
       <View style={styles.login}>
@@ -163,7 +239,7 @@ const HomeMenu = ({navigation}) => {
         onChangeText={text => setSearchQuery(text)}
       />
       <FlatList
-        style={styles.flatList}
+        style={[styles.flatList]}
         data={rows}
         renderItem={renderRow}
         keyExtractor={(item, index) => index.toString()}
@@ -193,12 +269,10 @@ const HomeMenu = ({navigation}) => {
           </Pressable>
         </View>
         <View style={{flexDirection: 'row'}}>
-          <Pressable
-            style={styles.payButton}
-            onPress={() => {
-              printReceipt();
-              resetCart();
-            }}>
+          <Pressable style={styles.payButton} onPress={handleCreditPayment}>
+            <Text style={styles.payText}>CREDIT</Text>
+          </Pressable>
+          <Pressable style={styles.payButton} onPress={handleCashPayment}>
             <Text style={styles.payText}>CASH</Text>
           </Pressable>
           <Pressable
@@ -219,18 +293,37 @@ const HomeMenu = ({navigation}) => {
               {transform: [{translateY: modalTranslateY}]},
             ]}>
             <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-              <Text style={styles.closeButtonText}>X</Text>
+              <Icons name="cancel" size={30} color="gray" />
             </TouchableOpacity>
             <ScrollView>
               {cartItems.map(item => renderCartItem({item}))}
-              <View style={styles.totalContainer}>
-                <Text style={styles.totalText}>
-                  Total: {'\u20B9'}
-                  {totalPrice}
-                </Text>
-              </View>
             </ScrollView>
           </Animated.View>
+        </View>
+      </Modal>
+      <Modal
+        transparent={true}
+        visible={creditModalVisible}
+        onRequestClose={() => setCreditModalVisible(false)}>
+        <View style={styles.modalBackground}>
+          <View style={styles.creditModalContainer}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setCreditModalVisible(false)}>
+              <Icons name="cancel" size={25} color="gray" />
+            </TouchableOpacity>
+            <Text style={styles.creditModalTitle}>Select Party</Text>
+            <ScrollView>
+              {parties.map(party => (
+                <TouchableOpacity
+                  key={party.id}
+                  style={styles.partyItem}
+                  onPress={() => handleSelectParty(party)}>
+                  <Text style={styles.partyName}>{party.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
         </View>
       </Modal>
     </View>
@@ -278,6 +371,7 @@ const styles = StyleSheet.create({
   },
   flatList: {
     paddingTop: 60,
+    // paddingBottom:50,
     paddingHorizontal: 4,
   },
   rowContainer: {
@@ -328,10 +422,23 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#000',
   },
+  billitemName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'left',
+    color: '#000',
+    width: '30%',
+  },
   itemPrice: {
     fontSize: 14,
     color: '#888',
     textAlign: 'center',
+  },
+  itembillPrice: {
+    fontSize: 14,
+    color: '#888',
+    textAlign: 'center',
+    width: '15%',
   },
   emptyText: {
     fontSize: 18,
@@ -345,9 +452,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 10,
-    margin: 10,
+    // margin: 1,
+    marginBottom: 0,
     backgroundColor: '#FF7722',
-    borderRadius: 8,
+    borderTopLeftRadius: 6,
+    borderTopRightRadius: 6,
     elevation: 2,
     zIndex: 1,
     flexDirection: 'row',
@@ -367,10 +476,12 @@ const styles = StyleSheet.create({
     paddingLeft: 5,
   },
   payButton: {
+    height: 35,
     backgroundColor: 'white',
     padding: 5,
-    borderRadius: 10,
-    marginHorizontal: 4,
+    paddingTop: 8,
+    borderRadius: 8,
+    marginHorizontal: 5,
   },
   payText: {
     fontSize: 15,
@@ -379,29 +490,28 @@ const styles = StyleSheet.create({
   },
   modalBackground: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    marginBottom: 50,
+    // paddingBottom: 60,
+    paddingTop: 50,
   },
   modalContainer: {
-    width: '90%',
+    width: '100%',
     backgroundColor: 'white',
-    borderRadius: 10,
     padding: 10,
-    elevation: 10,
+    // elevation: 10,
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
   },
-  closeButton: {
-    width: 30,
-    backgroundColor: '#FF7722',
-    padding: 6.5,
-    borderRadius: 50,
-    marginLeft: 305,
-    marginBottom: 15,
-  },
-  closeButtonText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: 'bold',
+  creditModalContainer: {
+    width: '100%',
+    backgroundColor: 'white',
+    padding: 10,
+    // elevation: 10,
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
   },
   cartItemContainer: {
     flexDirection: 'row',
@@ -458,6 +568,35 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  itembillImage: {
+    width: '15%',
+    height: 45,
+    borderRadius: 5,
+    margin: 5,
+  },
+  creditModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+    color: 'black',
+  },
+  partyItem: {
+    padding: 10,
+    borderRadius: 5,
+    backgroundColor: '#FF8225',
+    margin: 5,
+    color: 'black',
+  },
+  partyName: {
+    fontSize: 16,
+  },
+  closeButton: {
+    marginTop: 1,
+    padding: 1,
+    borderRadius: 5,
+    alignItems: 'flex-end',
   },
 });
 

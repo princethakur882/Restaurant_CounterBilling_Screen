@@ -1,12 +1,12 @@
 import {View, Text, StyleSheet, TouchableOpacity, Image} from 'react-native';
 import React, {useState} from 'react';
-import Items from './Tabs/Items';
-import Add from './Tabs/Add';
-import Orders from './Tabs/Orders';
+import Items from '../Screens/Admin/Tabs/AdminTabs/Items';
+import Add from '../Screens/Admin/Tabs/AdminTabs/Add';
+import Orders from '../Screens/Admin/Tabs/AdminTabs/Orders';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Icons from 'react-native-vector-icons/FontAwesome5';
-import User from './Tabs/User';
-import Party from './Tabs/Party';
+import User from '../Screens/Admin/Tabs/AdminTabs/User';
+import Party from '../Screens/Admin/Tabs/AdminTabs/Party';
 
 
 const AdminDashboard = () => {

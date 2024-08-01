@@ -35,11 +35,27 @@ const HomeMenu = ({navigation}) => {
   const cartBarAnimation = useRef(new Animated.Value(0)).current;
   const modalSlideAnimation = useRef(new Animated.Value(0)).current;
   const [modalVisible, setModalVisible] = useState(false);
+  const [creditModalVisible, setCreditModalVisible] = useState(false);
   const [toggleIcon, setToggleIcon] = useState(false);
+  const [parties, setParties] = useState([]);
+  const [selectedParty, setSelectedParty] = useState(null);
 
   const totalItems = cartItems.reduce((acc, curr) => {
     return acc + curr.count;
   }, 0);
+
+  useEffect(() => {
+    const fetchParties = async () => {
+      const snapshot = await firestore().collection('parties').get();
+      const fetchedParties = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setParties(fetchedParties);
+    };
+
+    fetchParties();
+  }, []);
 
   useEffect(() => {
     Animated.timing(cartBarAnimation, {
@@ -56,7 +72,7 @@ const HomeMenu = ({navigation}) => {
 
   const renderItem = ({item}) => {
     return (
-      <View style={styles.itemContainer} >
+      <View style={styles.itemContainer}>
         <Image source={{uri: item.data.imageUrl}} style={styles.itemimg} />
         <View style={styles.itemDetails}>
           <Text style={styles.itemName}>{item.data.name}</Text>
@@ -104,11 +120,11 @@ const HomeMenu = ({navigation}) => {
           total: totalPrice,
           createdAt: firestore.FieldValue.serverTimestamp(),
           status: 'received',
+          party: selectedParty ? firestore().collection('parties').doc(selectedParty.id) : null,
         });
   
       console.log('Order added!', orderRef.id);
   
-      // Update the quantity of items in the items collection
       const batch = firestore().batch();
       cartItems.forEach(item => {
         const itemRef = firestore().collection('items').doc(item.id);
@@ -133,7 +149,16 @@ const HomeMenu = ({navigation}) => {
       resetCart();
     }
   };
-  
+
+  const handleCreditPayment = () => {
+    setCreditModalVisible(true);
+  };
+
+  const handleSelectParty = (party) => {
+    setSelectedParty(party);
+    setCreditModalVisible(false);
+    handleCashPayment();
+  };
 
   const renderCartItem = ({item}) =>
     item.count > 0 && (
@@ -185,7 +210,7 @@ const HomeMenu = ({navigation}) => {
     inputRange: [0, 1],
     outputRange: [500, 0],
   });
-console.log(cartItems);
+
   return (
     <View style={styles.container}>
       <View style={styles.login}>
@@ -239,7 +264,7 @@ console.log(cartItems);
         <View style={{flexDirection: 'row'}}>
           <Pressable
             style={styles.payButton}
-            onPress={handleCashPayment}>
+            onPress={handleCreditPayment}>
             <Text style={styles.payText}>CREDIT</Text>
           </Pressable>
           <Pressable
@@ -267,10 +292,40 @@ console.log(cartItems);
             <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
               <Text style={styles.closeButtonText}>X</Text>
             </TouchableOpacity>
-            <ScrollView>
-              {cartItems.map(item => renderCartItem({item}))}
-            </ScrollView>
+            <FlatList
+              data={cartItems}
+              renderItem={renderCartItem}
+              keyExtractor={(item, index) => index.toString()}
+            />
+            <Text style={styles.totalPrice}>
+              Total: {'\u20B9'} {totalPrice}
+            </Text>
           </Animated.View>
+        </View>
+      </Modal>
+      <Modal
+        transparent={true}
+        visible={creditModalVisible}
+        onRequestClose={() => setCreditModalVisible(false)}>
+        <View style={styles.modalBackground}>
+          <View style={styles.creditModalContainer}>
+            <Text style={styles.creditModalTitle}>Select Party</Text>
+            <ScrollView>
+              {parties.map(party => (
+                <TouchableOpacity
+                  key={party.id}
+                  style={styles.partyItem}
+                  onPress={() => handleSelectParty(party)}>
+                  <Text style={styles.partyName}>{party.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setCreditModalVisible(false)}>
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </Modal>
     </View>
@@ -280,251 +335,198 @@ console.log(cartItems);
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f0f0f0',
   },
   login: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    padding: 10,
   },
   btn: {
-    backgroundColor: '#FF7722',
-    height: 40,
-    width: '45%',
-    borderRadius: 10,
-    margin: 10,
-  },
-  adminbtn: {
-    backgroundColor: '#FFF',
-    height: 40,
-    width: '45%',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#FF7722',
-    margin: 10,
+    backgroundColor: 'blue',
+    padding: 10,
+    borderRadius: 5,
   },
   text: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#fff',
-    textAlign: 'center',
-    paddingTop: 8,
+    color: 'white',
+    fontSize: 16,
+  },
+  adminbtn: {
+    backgroundColor: 'red',
+    padding: 10,
+    borderRadius: 5,
   },
   admintext: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FF7722',
-    textAlign: 'center',
-    paddingTop: 8,
-  },
-  flatList: {
-    paddingTop: 60,
-    paddingHorizontal: 4,
-  },
-  rowContainer: {
-    flexDirection: 'row',
-    marginBottom: 16,
+    color: 'white',
+    fontSize: 16,
   },
   searchBar: {
-    position: 'absolute',
-    top: 50,
-    left: 0,
-    right: 0,
+    backgroundColor: 'white',
     padding: 10,
     margin: 10,
-    backgroundColor: '#fff',
-    borderColor: '#FF7722',
+    borderRadius: 5,
+    borderColor: 'gray',
     borderWidth: 1,
-    borderRadius: 8,
-    elevation: 2,
-    zIndex: 1,
+  },
+  flatList: {
+    flex: 1,
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 20,
+    fontSize: 18,
   },
   itemContainer: {
-    width: 120,
-    margin: 4,
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: 'white',
+    margin: 5,
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
     alignItems: 'center',
   },
   itemimg: {
-    width: 100,
+    width: 80,
     height: 80,
-    resizeMode: 'cover',
-    marginBottom: 8,
     borderRadius: 5,
   },
   itemDetails: {
     alignItems: 'center',
-    paddingHorizontal: 10,
-    marginTop: 5,
+    marginTop: 10,
   },
   itemName: {
     fontSize: 16,
     fontWeight: 'bold',
-    textAlign: 'center',
-    color: '#000',
-  },
-  billitemName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'left',
-    color: '#000',
-    width:'30%',
   },
   itemPrice: {
     fontSize: 14,
-    color: '#888',
-    textAlign: 'center',
+    color: 'gray',
   },
-  itembillPrice: {
-    fontSize: 14,
-    color: '#888',
-    textAlign: 'center',
-    width:'15%'
-  },
-  emptyText: {
-    fontSize: 18,
-    color: '#888',
-    textAlign: 'center',
-    marginTop: 50,
+  rowContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
   },
   cartBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
+    backgroundColor: '#333',
     padding: 10,
-    // margin: 1,
-    marginBottom:0,
-    backgroundColor: '#FF7722',
-    borderTopLeftRadius:6,
-    borderTopRightRadius:6,
-    elevation: 2,
-    zIndex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    textAlign: 'center',
-    alignItems: 'center',
-    height: 50,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
   },
   outercart: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
   },
   cartText: {
-    fontSize: 15,
-    fontWeight: '700',
     color: 'white',
-    paddingLeft: 5,
+    fontSize: 16,
   },
   payButton: {
-    height:35,
-    backgroundColor: 'white',
-    padding: 5,
-    paddingTop:8,
-    borderRadius: 8,
+    backgroundColor: 'blue',
+    padding: 10,
+    borderRadius: 5,
     marginHorizontal: 5,
+    flex: 1,
+    alignItems: 'center',
   },
   payText: {
-    fontSize: 15,
-    fontWeight: '900',
-    color: '#FF7722',
+    color: 'white',
+    fontSize: 16,
   },
   modalBackground: {
     flex: 1,
-    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    marginBottom:50,
-    // paddingBottom: 60,
-    paddingTop:50
   },
   modalContainer: {
-    width: '100%',
     backgroundColor: 'white',
-    padding: 10,
-    // elevation: 10,
-    borderTopLeftRadius:15,
-    borderTopRightRadius:15,
+    padding: 20,
+    borderRadius: 10,
+    width: '80%',
+    maxHeight: '80%',
   },
   closeButton: {
-    width: 30,
-    backgroundColor: 'gray',
-    padding: 6.5,
-    borderRadius: 50,
-    marginLeft: 340,
-    marginBottom: 5,
+    position: 'absolute',
+    top: 10,
+    right: 10,
   },
   closeButtonText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: 'bold',
+    fontSize: 18,
+    color: 'red',
   },
   cartItemContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 10,
     marginBottom: 10,
-    backgroundColor: '#fff',
+  },
+  itembillImage: {
+    width: 50,
+    height: 50,
     borderRadius: 5,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+  },
+  billitemName: {
+    flex: 1,
+    fontSize: 16,
+    marginLeft: 10,
   },
   counterContainer: {
-    borderWidth: 1.5,
-    borderColor: '#FF7722',
-    borderRadius: 5,
     flexDirection: 'row',
     alignItems: 'center',
   },
   decrement: {
+    backgroundColor: 'red',
     padding: 5,
-  },
-  increment: {
-    padding: 5,
+    borderRadius: 5,
   },
   buttonText: {
-    color: '#FF7722',
+    color: 'white',
     fontSize: 16,
-    fontWeight: '900',
-    paddingHorizontal: 8,
   },
   countText: {
-    color: '#FF7722',
-    padding: 8,
-    backgroundColor: '#fff',
-    fontSize: 15.5,
-    fontWeight: '900',
-    paddingHorizontal: 5,
-    paddingVertical: 6,
+    marginHorizontal: 10,
+    fontSize: 16,
   },
-  totalContainer: {
-    marginTop: 20,
-    padding: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#ddd',
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
+  increment: {
+    backgroundColor: 'green',
+    padding: 5,
+    borderRadius: 5,
   },
-  totalText: {
+  itembillPrice: {
+    fontSize: 16,
+    marginLeft: 10,
+  },
+  totalPrice: {
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
+    marginTop: 10,
   },
-  itembillImage: {
-    width: '15%',
-    height: 45,
-    borderRadius: 5,
-    margin: 5,
+  creditModalContainer: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    width: '80%',
+    maxHeight: '80%',
+  },
+  creditModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  partyItem: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'gray',
+  },
+  partyName: {
+    fontSize: 16,
   },
 });
 

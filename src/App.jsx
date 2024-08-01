@@ -1,15 +1,17 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import HomeMenu from './Screens/DefaultMenu/HomeMenu';
+import HomeMenu from './Dashboard/HomeMenu';
 import Payment from './Screens/DefaultMenu/Printer';
 import { ApiProvider } from './Context/ApiProvider';
 import SelectLogin from './Screens/LogIn/SelectLogin';
 import AdminLogIn from './Screens/LogIn/AdminLogIn';
 import UserLogin from './Screens/LogIn/UserLogin';
-import AdminDashboard from './Screens/Admin/AdminDashboard';
+import AdminDashboard from './Dashboard/AdminDashboard';
 import BillDetails from './Screens/DefaultMenu/BillDetails';
-import EditItem from './Screens/Admin/EditItem';
+import EditItem from './Screens/Admin/Tabs/ExtraTabs/EditItem';
+import Party from './Screens/Admin/Tabs/AdminTabs/Party';
+import PartyDetails from './Screens/Admin/Tabs/ExtraTabs/PartyDetails';
 
 
 const Stack = createNativeStackNavigator();
@@ -58,6 +60,16 @@ const App = () => {
             name="EditItems"
             component={EditItem}
             options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Party"
+            component={Party}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="PartyDetails"
+            component={PartyDetails}
+            options={{ headerShown: true }}
           />
         </Stack.Navigator>
       </NavigationContainer>
