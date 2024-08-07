@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -8,37 +8,48 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
-import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
+import {createMaterialTopTabNavigator} from '@react-navigation/material-top-tabs';
+import ProgressBar from 'react-native-progress/Bar';
 
 const Tab = createMaterialTopTabNavigator();
 
-const OrdersReceived = ({ orders, handleAccept }) => {
-  const renderOrderItem = ({ item }) => (
-    <View style={styles.orderItem}>
-      <Text style={styles.totalText}>Order No: {item.orderId}</Text>
-      <FlatList
-        data={item.data.items}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={renderOrderProduct}
-      />
-      <Text style={styles.totalText}>Total: {item.data.total}</Text>
-      <Text style={styles.dateText}>
-        Date: {item.data.createdAt?.toDate().toString()}
-      </Text>
-      <View style={{ flexDirection: 'row' }}>
-        <TouchableOpacity style={styles.acceptButton} onPress={() => handleAccept(item.orderId)}>
-          <Text style={styles.acceptButtonText}>Accept</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.declineButton} onPress={() => {}}>
-          <Text style={styles.declineButtonText}>Decline</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+const OrdersReceived = ({orders, handleAccept}) => {
+  const [expandedOrder, setExpandedOrder] = useState(null);
 
-  const renderOrderProduct = ({ item }) => (
+  const toggleExpandOrder = (orderId) => {
+    setExpandedOrder(prevOrderId => (prevOrderId === orderId ? null : orderId));
+  };
+
+  const renderOrderItem = ({item}) => {
+    const isExpanded = expandedOrder === item.orderId;
+    return (
+      <TouchableOpacity onPress={() => toggleExpandOrder(item.orderId)}>
+        <View style={styles.orderItem}>
+          <Text style={styles.totalText}>Order No: {item.orderId}</Text>
+          <Text style={styles.totalText}>Total: {item.data.total}</Text>
+          <Text style={styles.dateText}>
+            Date: {item.data.createdAt?.toDate().toString()}
+          </Text>
+          {isExpanded && (
+            <FlatList
+              data={item.data.items}
+              keyExtractor={(item, index) => index.toString()}
+              renderItem={renderOrderProduct}
+            />
+          )}
+          <TouchableOpacity
+            style={[styles.acceptButton, isExpanded && styles.acceptButtonExpanded]}
+            onPress={() => handleAccept(item.orderId)}>
+            <Text style={styles.acceptButtonText}>Accept</Text>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderOrderProduct = ({item}) => (
     <View style={styles.itemView}>
-      <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
+      <Image source={{uri: item.imageUrl}} style={styles.itemImage} />
       <View>
         <Text style={styles.nameText}>{item.name}</Text>
         <Text style={styles.nameText}>
@@ -51,7 +62,7 @@ const OrdersReceived = ({ orders, handleAccept }) => {
   return (
     <View style={styles.container}>
       <FlatList
-        style={{ marginBottom: 60 }}
+        style={{marginBottom: 60}}
         data={orders.filter(order => order.data.status === 'received')}
         keyExtractor={(item, index) => index.toString()}
         renderItem={renderOrderItem}
@@ -60,38 +71,108 @@ const OrdersReceived = ({ orders, handleAccept }) => {
   );
 };
 
-const PendingOrder = ({ orders, handleCancel, handleComplete }) => {
-  const renderOrderItem = ({ item }) => (
-    <View style={styles.orderItem}>
-      <Text style={styles.totalText}>Order No: {item.orderId}</Text>
-      <FlatList
-        data={item.data.items}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={renderOrderProduct}
-      />
-      <Text style={styles.totalText}>Total: {item.data.total}</Text>
-      <Text style={styles.dateText}>
-        Date: {item.data.createdAt?.toDate().toString()}
-      </Text>
-      <View style={{ flexDirection: 'row' }}>
-        <TouchableOpacity style={styles.completeButton} onPress={() => handleComplete(item.orderId)}>
-          <Text style={styles.completeButtonText}>Complete</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.cancelButton} onPress={() => handleCancel(item.orderId)}>
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
 
-  const renderOrderProduct = ({ item }) => (
+
+const PendingOrder = ({ orders, handleComplete, setOrders }) => {
+  const [expandedOrder, setExpandedOrder] = useState(null);
+
+  const calculateProgress = (items) => {
+    const completedItems = items.filter(item => item.completed).length;
+    return (completedItems / items.length) * 100;
+  };
+
+  const handleCompleteItem = async (orderId, itemId) => {
+    
+    setOrders(prevOrders => prevOrders.map(order => {
+      if (order.orderId === orderId) {
+        const updatedItems = order.data.items.map(item =>
+          item.id === itemId ? { ...item, completed: true } : item
+        );
+        const allCompleted = updatedItems.every(item => item.completed);
+        const updatedOrder = { ...order, data: { ...order.data, items: updatedItems } };
+        if (allCompleted) {
+          handleComplete(orderId); 
+        }
+        return updatedOrder;
+      }
+      return order;
+    }));
+  };
+
+  const toggleExpandOrder = (orderId) => {
+    setExpandedOrder(prevOrderId => (prevOrderId === orderId ? null : orderId));
+  };
+
+  const renderOrderItem = ({ item }) => {
+    const progress = calculateProgress(item.data.items);
+    const isExpanded = expandedOrder === item.orderId;
+
+    return (
+      <TouchableOpacity onPress={() => toggleExpandOrder(item.orderId)}>
+        <View style={styles.orderItem}>
+          <Text style={styles.totalText}>Order No: {item.orderId}</Text>
+          <Text style={styles.totalText}>Total: {item.data.total}</Text>
+          <Text style={styles.dateText}>
+            Date: {item.data.createdAt?.toDate().toString()}
+          </Text>
+          <View style={styles.progressContainer}>
+            <ProgressBar
+              styleAttr="Horizontal"
+              indeterminate={false}
+              progress={progress / 100}
+              color="#FF7722"
+            />
+            <Text style={styles.progressText}>{`${progress.toFixed(0)}%`}</Text>
+          </View>
+          {isExpanded ? (
+            <FlatList
+              data={item.data.items}
+              keyExtractor={(item, index) => index.toString()}
+              renderItem={renderOrderProduct(item.orderId)}
+              ListFooterComponent={
+                <TouchableOpacity
+                  style={styles.completeButton}
+                  onPress={() => handleComplete(item.orderId)}>
+                  <Text style={styles.completeButtonText}>Complete Order</Text>
+                </TouchableOpacity>
+              }
+            />
+          ) : (
+            <TouchableOpacity
+              style={styles.completeButton}
+              onPress={() => handleComplete(item.orderId)}>
+              <Text style={styles.completeButtonText}>Complete Order</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderOrderProduct = (orderId) => ({ item }) => (
     <View style={styles.itemView}>
       <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
-      <View>
+      <View style={styles.itemInfo}>
         <Text style={styles.nameText}>{item.name}</Text>
         <Text style={styles.nameText}>
           {'Price: ' + item.price + ', Qty: ' + item.quantity}
         </Text>
+        <View style={styles.itemActions}>
+          <ProgressBar
+            styleAttr="Horizontal"
+            indeterminate={false}
+            progress={item.completed ? 1 : 0}
+            color="green"
+            style={styles.itemProgressBar}
+          />
+          {!item.completed && (
+            <TouchableOpacity
+              style={styles.completeItemButton}
+              onPress={() => handleCompleteItem(orderId, item.id)}>
+              <Text style={styles.completeButtonText}>Complete</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     </View>
   );
@@ -108,20 +189,52 @@ const PendingOrder = ({ orders, handleCancel, handleComplete }) => {
   );
 };
 
+
+
 const OrderCompleted = ({ orders }) => {
+  const [expandedOrder, setExpandedOrder] = useState(null);
+
+  const handleRefund = async (orderId) => {
+    const orderToRefund = orders.find(order => order.orderId === orderId);
+
+    if (orderToRefund) {
+      
+      await firestore().collection('refundOrders').add({
+        ...orderToRefund,
+        refundedAt: new Date(),
+      });
+
+     
+      await firestore().collection('orders').doc(orderId).update({
+        status: 'refunded',
+      });
+    }
+  };
+
   const renderOrderItem = ({ item }) => (
-    <View style={styles.orderItem}>
-      <Text style={styles.totalText}>Order No: {item.orderId}</Text>
-      <FlatList
-        data={item.data.items}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={renderOrderProduct}
-      />
-      <Text style={styles.totalText}>Total: {item.data.total}</Text>
-      <Text style={styles.dateText}>
-        Date: {item.data.createdAt?.toDate().toString()}
-      </Text>
-    </View>
+    <TouchableOpacity onPress={() => setExpandedOrder(item.orderId)}>
+      <View style={styles.orderItem}>
+        <Text style={styles.totalText}>Order No: {item.orderId}</Text>
+        <Text style={styles.totalText}>Total: {item.data.total}</Text>
+        <Text style={styles.dateText}>
+          Date: {item.data.createdAt?.toDate().toString()}
+        </Text>
+        {expandedOrder === item.orderId && (
+          <>
+            <FlatList
+              data={item.data.items}
+              keyExtractor={(item, index) => index.toString()}
+              renderItem={renderOrderProduct}
+            />
+            <TouchableOpacity
+              style={styles.refundButton}
+              onPress={() => handleRefund(item.orderId)}>
+              <Text style={styles.refundButtonText}>Refund</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
+    </TouchableOpacity>
   );
 
   const renderOrderProduct = ({ item }) => (
@@ -148,9 +261,12 @@ const OrderCompleted = ({ orders }) => {
   );
 };
 
-const TabLabel = ({ title, count, isActive }) => (
-  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-    <Text style={[styles.tabLabelText, isActive && styles.tabLabelActive]}>{title}</Text>
+
+const TabLabel = ({title, count, isActive}) => (
+  <View style={{flexDirection: 'row', alignItems: 'center'}}>
+    <Text style={[styles.tabLabelText, isActive && styles.tabLabelActive]}>
+      {title}
+    </Text>
     {count > 0 && (
       <View style={styles.countBadge}>
         <Text style={styles.countBadgeText}>{count}</Text>
@@ -178,210 +294,206 @@ const MyTabs = () => {
       });
     });
     setOrders(tempData);
-    setReceivedCount(tempData.filter(order => order.data.status === 'received').length);
-    setPendingCount(tempData.filter(order => order.data.status === 'pending').length);
+    setReceivedCount(
+      tempData.filter(order => order.data.status === 'received').length,
+    );
+    setPendingCount(
+      tempData.filter(order => order.data.status === 'pending').length,
+    );
   };
 
-  const handleAccept = async (orderId) => {
-    await firestore().collection('orders').doc(orderId).update({ status: 'pending' });
-    setOrders(prevOrders => prevOrders.map(order => 
-      order.orderId === orderId ? { ...order, data: { ...order.data, status: 'pending' } } : order
-    ));
+  const handleAccept = async orderId => {
+    await firestore()
+      .collection('orders')
+      .doc(orderId)
+      .update({status: 'pending'});
+    setOrders(prevOrders =>
+      prevOrders.map(order =>
+        order.orderId === orderId
+          ? {...order, data: {...order.data, status: 'pending'}}
+          : order,
+      ),
+    );
     setReceivedCount(prevCount => prevCount - 1);
     setPendingCount(prevCount => prevCount + 1);
   };
 
-  const handleCancel = async (orderId) => {
-    await firestore().collection('orders').doc(orderId).update({ status: 'canceled' });
-    setOrders(prevOrders => prevOrders.map(order => 
-      order.orderId === orderId ? { ...order, data: { ...order.data, status: 'canceled' } } : order
-    ));
-    setPendingCount(prevCount => prevCount - 1);
-  };
-
-  const handleComplete = async (orderId) => {
-    await firestore().collection('orders').doc(orderId).update({ status: 'completed' });
-    setOrders(prevOrders => prevOrders.map(order => 
-      order.orderId === orderId ? { ...order, data: { ...order.data, status: 'completed' } } : order
-    ));
+  const handleComplete = async orderId => {
+    await firestore()
+      .collection('orders')
+      .doc(orderId)
+      .update({status: 'completed'});
+    setOrders(prevOrders =>
+      prevOrders.map(order =>
+        order.orderId === orderId
+          ? {...order, data: {...order.data, status: 'completed'}}
+          : order,
+      ),
+    );
     setPendingCount(prevCount => prevCount - 1);
   };
 
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarActiveTintColor: '#FF7722',
-        tabBarInactiveTintColor: '#777',
-        tabBarLabelStyle: { fontSize: 15, fontWeight: 'bold' },
-        tabBarStyle: { backgroundColor: 'lightgray' },
-        tabBarIndicatorStyle: { backgroundColor: '#FF7722', height: 4 },
-        tabBarLabel: ({ color, focused }) => {
-          let title;
-          let count;
-          switch (route.name) {
-            case 'Received':
-              title = 'RECEIVED';
-              count = receivedCount;
-              break;
-            case 'Pending':
-              title = 'PENDING';
-              count = pendingCount;
-              break;
-            case 'Completed':
-              title = 'COMPLETED';
-              count = 0;
-              break;
-          }
-          return <TabLabel title={title} count={count} isActive={focused} />;
-        },
-      })}>
-      <Tab.Screen name="Received">
-        {() => <OrdersReceived orders={orders} handleAccept={handleAccept} />}
+    <Tab.Navigator>
+      <Tab.Screen
+        name="Received"
+        options={{
+          tabBarLabel: ({focused}) => (
+            <TabLabel
+              title="Received"
+              count={receivedCount}
+              isActive={focused}
+            />
+          ),
+        }}>
+        {props => (
+          <OrdersReceived {...props} orders={orders} handleAccept={handleAccept} />
+        )}
       </Tab.Screen>
-      <Tab.Screen name="Pending">
-        {() => <PendingOrder orders={orders} handleCancel={handleCancel} handleComplete={handleComplete} />}
+      <Tab.Screen
+        name="Preparation"  
+        options={{
+          tabBarLabel: ({focused}) => (
+            <TabLabel
+              title="Preparation"
+              count={pendingCount}
+              isActive={focused}
+            />
+          ),
+        }}>
+        {props => (
+          <PendingOrder {...props} orders={orders} handleComplete={handleComplete} setOrders={setOrders} />
+        )}
       </Tab.Screen>
-      <Tab.Screen name="Completed">
-        {() => <OrderCompleted orders={orders} />}
+      <Tab.Screen
+        name="Completed"
+        options={{
+          tabBarLabel: ({focused}) => (
+            <TabLabel
+              title="Completed"
+              count={orders.filter(order => order.data.status === 'completed').length}
+              isActive={focused}
+            />
+          ),
+        }}>
+        {props => <OrderCompleted {...props} orders={orders} />}
       </Tab.Screen>
     </Tab.Navigator>
   );
 };
 
-export default MyTabs;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#fff',
   },
   orderItem: {
-    width: '90%',
-    borderRadius: 10,
-    elevation: 5,
-    alignSelf: 'center',
-    backgroundColor: '#fff',
-    marginTop: 20,
-    marginBottom: 10,
-    padding: 10,
-  },
-  itemImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 10,
-  },
-  itemView: {
-    margin: 10,
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  nameText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-    marginLeft: 20,
-    marginTop: 5,
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
   totalText: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginTop: 10,
   },
   dateText: {
     fontSize: 14,
-    color: '#888',
-    marginTop: 5,
+    color: '#555',
   },
   acceptButton: {
-    width: '40%',
-    height: 40,
+    backgroundColor: '#FF7722',
+    padding: 10,
     borderRadius: 5,
-    backgroundColor: 'green',
-    color: 'white',
-    alignItems: 'center',
-    justifyContent: 'center',
-    margin: 20,
-    marginLeft: 14,
+    marginTop: 10,
   },
   acceptButtonText: {
-    color: 'white',
-    fontWeight: '800',
-    fontSize: 18,
-  },
-  declineButton: {
-    width: '40%',
-    height: 40,
-    borderRadius: 5,
-    backgroundColor: 'red',
-    color: 'white',
-    alignItems: 'center',
-    justifyContent: 'center',
-    margin: 20,
-  },
-  declineButtonText: {
-    color: 'white',
-    fontWeight: '800',
-    fontSize: 18,
+    color: '#fff',
+    fontSize: 14,
+    textAlign: 'center',
   },
   completeButton: {
-    width: '40%',
-    height: 40,
+    backgroundColor: 'green',
+    padding: 10,
     borderRadius: 5,
-    backgroundColor: 'blue',
-    color: 'white',
-    alignItems: 'center',
-    justifyContent: 'center',
-    margin: 20,
-    marginLeft: 14,
+    marginTop: 10,
   },
   completeButtonText: {
-    color: 'white',
-    fontWeight: '800',
-    fontSize: 18,
-  },
-  cancelButton: {
-    width: '40%',
-    height: 40,
-    borderRadius: 5,
-    backgroundColor: 'red',
-    color: 'white',
-    alignItems: 'center',
-    justifyContent: 'center',
-    margin: 20,
-  },
-  cancelButtonText: {
-    color: 'white',
-    fontWeight: '800',
-    fontSize: 18,
-  },
-  pendingHeader: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    padding: 10,
+    color: '#fff',
+    fontSize: 14,
     textAlign: 'center',
-    backgroundColor: 'lightgray',
   },
-  countBadge: {
-    backgroundColor: '#FF7722',
-    borderRadius: 50,
-    padding: 5,
-    marginLeft: 5,
+  itemView: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    width:30,
+    marginTop: 10,
   },
-  countBadgeText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize:18,
+  itemImage: {
+    width: 50,
+    height: 50,
+    marginRight: 10,
+  },
+  nameText: {
+    fontSize: 14,
+  },
+  itemInfo: {
+    flex: 1,
+  },
+  itemActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  itemProgressBar: {
+    flex: 1,
+    marginRight: 10,
+  },
+  completeItemButton: {
+    backgroundColor: 'green',
+    padding: 5,
+    borderRadius: 5,
+  },
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  progressText: {
+    marginLeft: 10,
+    fontSize: 14,
   },
   tabLabelText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: 'bold',
-    color: '#777', 
   },
   tabLabelActive: {
     color: '#FF7722',
   },
+  countBadge: {
+    backgroundColor: '#FF7722',
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginLeft: 4,
+  },
+  countBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+  },
+  refundButton: {
+    height: 40,
+    borderRadius: 5,
+    backgroundColor: 'red',
+    color: 'white',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  refundButtonText: {
+    color: 'white',
+    fontWeight: '800',
+    fontSize: 18,
+  },
 });
+
+export default MyTabs;

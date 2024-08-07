@@ -13,11 +13,11 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
-import {ApiContext} from '../Context/ApiProvider';
-import AddToCartButton from '../Screens/DefaultMenu/CartButton';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import firestore from '@react-native-firebase/firestore';
 import Icons from 'react-native-vector-icons/MaterialIcons';
+import AddToCartButton from '../DefaultMenu/CartButton';
+import { ApiContext } from '../../Context/ApiProvider';
 
 const HomeMenu = ({navigation}) => {
   const {
@@ -57,6 +57,7 @@ const HomeMenu = ({navigation}) => {
 
     fetchParties();
   }, []);
+  
 
   useEffect(() => {
     Animated.timing(cartBarAnimation, {
@@ -153,7 +154,6 @@ const HomeMenu = ({navigation}) => {
       resetCart();
     }
   };
-
   const handleCreditPayment = () => {
     setCreditModalVisible(true);
   };

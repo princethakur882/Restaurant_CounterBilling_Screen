@@ -561,6 +561,7 @@ const HomeMenu = ({navigation}) => {
         return acc;
       }, [])
     : [];
+    //
 
   const renderRow = ({item}) => (
     <View style={styles.rowContainer}>

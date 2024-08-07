@@ -1,12 +1,12 @@
 import {View, Text, StyleSheet, TouchableOpacity, Image} from 'react-native';
 import React, {useState} from 'react';
-import Items from '../Screens/Admin/Tabs/AdminTabs/Items';
-import Add from '../Screens/Admin/Tabs/AdminTabs/Add';
-import Orders from '../Screens/Admin/Tabs/AdminTabs/Orders';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Icons from 'react-native-vector-icons/FontAwesome5';
-import User from '../Screens/Admin/Tabs/AdminTabs/User';
-import Party from '../Screens/Admin/Tabs/AdminTabs/Party';
+import Items from '../Admin/Tabs/AdminTabs/Items';
+import Party from '../Admin/Tabs/AdminTabs/Party';
+import Add from '../Admin/Tabs/AdminTabs/Add';
+import User from '../Admin/Tabs/AdminTabs/User';
+import MyTabs from '../Admin/Tabs/AdminTabs/Orders';
 
 
 const AdminDashboard = () => {
@@ -20,11 +20,11 @@ const AdminDashboard = () => {
       ) : selectedTab == 2 ? (
         <Add />
       ) : selectedTab == 3 ? (
-        <Orders />
+        <MyTabs />
       ) : selectedTab == 4 ? (
         <User />
       ) : (
-        <Notifications />
+        <User />
       )}
 
       <View style={styles.bottomView}>

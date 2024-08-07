@@ -1,17 +1,17 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import HomeMenu from './Dashboard/HomeMenu';
 import Payment from './Screens/DefaultMenu/Printer';
 import { ApiProvider } from './Context/ApiProvider';
 import SelectLogin from './Screens/LogIn/SelectLogin';
 import AdminLogIn from './Screens/LogIn/AdminLogIn';
 import UserLogin from './Screens/LogIn/UserLogin';
-import AdminDashboard from './Dashboard/AdminDashboard';
 import BillDetails from './Screens/DefaultMenu/BillDetails';
 import EditItem from './Screens/Admin/Tabs/ExtraTabs/EditItem';
 import Party from './Screens/Admin/Tabs/AdminTabs/Party';
 import PartyDetails from './Screens/Admin/Tabs/ExtraTabs/PartyDetails';
+import HomeMenu from './Screens/Dashboard/HomeMenu';
+import AdminDashboard from './Screens/Dashboard/AdminDashboard';
 
 
 const Stack = createNativeStackNavigator();
