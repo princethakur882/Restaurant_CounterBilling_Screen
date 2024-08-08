@@ -17,7 +17,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import firestore from '@react-native-firebase/firestore';
 import Icons from 'react-native-vector-icons/MaterialIcons';
 import AddToCartButton from '../DefaultMenu/CartButton';
-import { ApiContext } from '../../Context/ApiProvider';
+import {ApiContext} from '../../Context/ApiProvider';
 
 const HomeMenu = ({navigation}) => {
   const {
@@ -57,7 +57,6 @@ const HomeMenu = ({navigation}) => {
 
     fetchParties();
   }, []);
-  
 
   useEffect(() => {
     Animated.timing(cartBarAnimation, {
@@ -110,22 +109,25 @@ const HomeMenu = ({navigation}) => {
 
   const createOrder = async cartItems => {
     try {
-      const orderRef = await firestore()
-        .collection('orders')
-        .add({
-          items: cartItems.map(item => ({
-            name: item.data.name,
-            price: item.data.price,
-            quantity: item.count,
-            imageUrl: item.data.imageUrl,
-          })),
-          total: totalPrice,
-          createdAt: firestore.FieldValue.serverTimestamp(),
-          status: 'received',
-          party: selectedParty
-            ? firestore().collection('parties').doc(selectedParty.id)
-            : null,
-        });
+     
+      const orderData = {
+        items: cartItems.map(item => ({
+          id: item.id,
+          name: item.data.name,
+          price: item.data.price,
+          quantity: item.count,
+          imageUrl: item.data.imageUrl,
+          completed: false,
+        })),
+        total: totalPrice,
+        createdAt: firestore.FieldValue.serverTimestamp(),
+        status: 'received',
+        party: selectedParty
+          ? firestore().collection('parties').doc(selectedParty.id)
+          : null,
+      };
+
+      const orderRef = await firestore().collection('orders').add(orderData);
 
       console.log('Order added!', orderRef.id);
 
@@ -144,6 +146,7 @@ const HomeMenu = ({navigation}) => {
       return orderRef.id;
     } catch (error) {
       console.error('Error creating order: ', error);
+      throw new Error('Order creation failed');
     }
   };
 

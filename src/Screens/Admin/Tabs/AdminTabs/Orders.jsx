@@ -16,7 +16,7 @@ const Tab = createMaterialTopTabNavigator();
 const OrdersReceived = ({orders, handleAccept}) => {
   const [expandedOrder, setExpandedOrder] = useState(null);
 
-  const toggleExpandOrder = (orderId) => {
+  const toggleExpandOrder = orderId => {
     setExpandedOrder(prevOrderId => (prevOrderId === orderId ? null : orderId));
   };
 
@@ -38,7 +38,10 @@ const OrdersReceived = ({orders, handleAccept}) => {
             />
           )}
           <TouchableOpacity
-            style={[styles.acceptButton, isExpanded && styles.acceptButtonExpanded]}
+            style={[
+              styles.acceptButton,
+              isExpanded && styles.acceptButtonExpanded,
+            ]}
             onPress={() => handleAccept(item.orderId)}>
             <Text style={styles.acceptButtonText}>Accept</Text>
           </TouchableOpacity>
@@ -71,39 +74,53 @@ const OrdersReceived = ({orders, handleAccept}) => {
   );
 };
 
-
-
-const PendingOrder = ({ orders, handleComplete, setOrders }) => {
+const PendingOrder = ({orders, handleComplete, setOrders}) => {
   const [expandedOrder, setExpandedOrder] = useState(null);
 
-  const calculateProgress = (items) => {
+  const calculateProgress = items => {
     const completedItems = items.filter(item => item.completed).length;
     return (completedItems / items.length) * 100;
   };
 
   const handleCompleteItem = async (orderId, itemId) => {
-    
-    setOrders(prevOrders => prevOrders.map(order => {
-      if (order.orderId === orderId) {
-        const updatedItems = order.data.items.map(item =>
-          item.id === itemId ? { ...item, completed: true } : item
-        );
-        const allCompleted = updatedItems.every(item => item.completed);
-        const updatedOrder = { ...order, data: { ...order.data, items: updatedItems } };
-        if (allCompleted) {
-          handleComplete(orderId); 
+    const orderRef = firestore().collection('orders').doc(orderId);
+
+    // Get the current items
+    const orderSnapshot = await orderRef.get();
+    const currentItems = orderSnapshot.data().items;
+
+    // Update the item's completion status
+    const updatedItems = currentItems.map(item =>
+      item.id === itemId ? {...item, completed: true} : item,
+    );
+
+    // Update the order in Firestore
+    await orderRef.update({items: updatedItems});
+
+    // Update the state locally
+    setOrders(prevOrders =>
+      prevOrders.map(order => {
+        if (order.orderId === orderId) {
+          const allCompleted = updatedItems.every(item => item.completed);
+          const updatedOrder = {
+            ...order,
+            data: {...order.data, items: updatedItems},
+          };
+          if (allCompleted) {
+            handleComplete(orderId);
+          }
+          return updatedOrder;
         }
-        return updatedOrder;
-      }
-      return order;
-    }));
+        return order;
+      }),
+    );
   };
 
-  const toggleExpandOrder = (orderId) => {
+  const toggleExpandOrder = orderId => {
     setExpandedOrder(prevOrderId => (prevOrderId === orderId ? null : orderId));
   };
 
-  const renderOrderItem = ({ item }) => {
+  const renderOrderItem = ({item}) => {
     const progress = calculateProgress(item.data.items);
     const isExpanded = expandedOrder === item.orderId;
 
@@ -149,38 +166,41 @@ const PendingOrder = ({ orders, handleComplete, setOrders }) => {
     );
   };
 
-  const renderOrderProduct = (orderId) => ({ item }) => (
-    <View style={styles.itemView}>
-      <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
-      <View style={styles.itemInfo}>
-        <Text style={styles.nameText}>{item.name}</Text>
-        <Text style={styles.nameText}>
-          {'Price: ' + item.price + ', Qty: ' + item.quantity}
-        </Text>
-        <View style={styles.itemActions}>
-          <ProgressBar
-            styleAttr="Horizontal"
-            indeterminate={false}
-            progress={item.completed ? 1 : 0}
-            color="green"
-            style={styles.itemProgressBar}
-          />
-          {!item.completed && (
-            <TouchableOpacity
-              style={styles.completeItemButton}
-              onPress={() => handleCompleteItem(orderId, item.id)}>
-              <Text style={styles.completeButtonText}>Complete</Text>
-            </TouchableOpacity>
-          )}
+  const renderOrderProduct =
+    orderId =>
+    ({item}) =>
+      (
+        <View style={styles.itemView}>
+          <Image source={{uri: item.imageUrl}} style={styles.itemImage} />
+          <View style={styles.itemInfo}>
+            <Text style={styles.nameText}>{item.name}</Text>
+            <Text style={styles.nameText}>
+              {'Price: ' + item.price + ', Qty: ' + item.quantity}
+            </Text>
+            <View style={styles.itemActions}>
+              <ProgressBar
+                styleAttr="Horizontal"
+                indeterminate={false}
+                progress={item.completed ? 1 : 0}
+                color="green"
+                style={styles.itemProgressBar}
+              />
+              {!item.completed && (
+                <TouchableOpacity
+                  style={styles.completeItemButton}
+                  onPress={() => handleCompleteItem(orderId, item.id)}>
+                  <Text style={styles.completeButtonText}>Complete</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
         </View>
-      </View>
-    </View>
-  );
+      );
 
   return (
     <View style={styles.container}>
       <FlatList
-        style={{ marginBottom: 60 }}
+        style={{marginBottom: 60}}
         data={orders.filter(order => order.data.status === 'pending')}
         keyExtractor={(item, index) => index.toString()}
         renderItem={renderOrderItem}
@@ -189,29 +209,22 @@ const PendingOrder = ({ orders, handleComplete, setOrders }) => {
   );
 };
 
-
-
-const OrderCompleted = ({ orders }) => {
+const OrderCompleted = ({orders}) => {
   const [expandedOrder, setExpandedOrder] = useState(null);
 
-  const handleRefund = async (orderId) => {
-    const orderToRefund = orders.find(order => order.orderId === orderId);
-
-    if (orderToRefund) {
-      
-      await firestore().collection('refundOrders').add({
-        ...orderToRefund,
-        refundedAt: new Date(),
-      });
-
-     
+  const handleRefund = async orderId => {
+    try {
+      // Update the status of the order to 'refund'
       await firestore().collection('orders').doc(orderId).update({
-        status: 'refunded',
+        status: 'refund',
       });
+      console.log(`Order ${orderId} status updated to 'refund'`);
+    } catch (error) {
+      console.error('Error updating order status: ', error);
     }
   };
 
-  const renderOrderItem = ({ item }) => (
+  const renderOrderItem = ({item}) => (
     <TouchableOpacity onPress={() => setExpandedOrder(item.orderId)}>
       <View style={styles.orderItem}>
         <Text style={styles.totalText}>Order No: {item.orderId}</Text>
@@ -237,9 +250,9 @@ const OrderCompleted = ({ orders }) => {
     </TouchableOpacity>
   );
 
-  const renderOrderProduct = ({ item }) => (
+  const renderOrderProduct = ({item}) => (
     <View style={styles.itemView}>
-      <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
+      <Image source={{uri: item.imageUrl}} style={styles.itemImage} />
       <View>
         <Text style={styles.nameText}>{item.name}</Text>
         <Text style={styles.nameText}>
@@ -252,7 +265,7 @@ const OrderCompleted = ({ orders }) => {
   return (
     <View style={styles.container}>
       <FlatList
-        style={{ marginBottom: 60 }}
+        style={{marginBottom: 60}}
         data={orders.filter(order => order.data.status === 'completed')}
         keyExtractor={(item, index) => index.toString()}
         renderItem={renderOrderItem}
@@ -260,7 +273,6 @@ const OrderCompleted = ({ orders }) => {
     </View>
   );
 };
-
 
 const TabLabel = ({title, count, isActive}) => (
   <View style={{flexDirection: 'row', alignItems: 'center'}}>
@@ -347,11 +359,15 @@ const MyTabs = () => {
           ),
         }}>
         {props => (
-          <OrdersReceived {...props} orders={orders} handleAccept={handleAccept} />
+          <OrdersReceived
+            {...props}
+            orders={orders}
+            handleAccept={handleAccept}
+          />
         )}
       </Tab.Screen>
       <Tab.Screen
-        name="Preparation"  
+        name="Preparation"
         options={{
           tabBarLabel: ({focused}) => (
             <TabLabel
@@ -362,7 +378,12 @@ const MyTabs = () => {
           ),
         }}>
         {props => (
-          <PendingOrder {...props} orders={orders} handleComplete={handleComplete} setOrders={setOrders} />
+          <PendingOrder
+            {...props}
+            orders={orders}
+            handleComplete={handleComplete}
+            setOrders={setOrders}
+          />
         )}
       </Tab.Screen>
       <Tab.Screen
@@ -371,7 +392,9 @@ const MyTabs = () => {
           tabBarLabel: ({focused}) => (
             <TabLabel
               title="Completed"
-              count={orders.filter(order => order.data.status === 'completed').length}
+              count={
+                orders.filter(order => order.data.status === 'completed').length
+              }
               isActive={focused}
             />
           ),
@@ -381,7 +404,6 @@ const MyTabs = () => {
     </Tab.Navigator>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {
