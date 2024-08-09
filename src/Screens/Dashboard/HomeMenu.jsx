@@ -18,6 +18,7 @@ import firestore from '@react-native-firebase/firestore';
 import Icons from 'react-native-vector-icons/MaterialIcons';
 import AddToCartButton from '../DefaultMenu/CartButton';
 import {ApiContext} from '../../Context/ApiProvider';
+import { format } from 'date-fns';
 
 const HomeMenu = ({navigation}) => {
   const {
@@ -107,8 +108,27 @@ const HomeMenu = ({navigation}) => {
     </View>
   );
 
+  const generateUniqueOrderId = async () => {
+    let orderId;
+    let isUnique = false;
+  
+    while (!isUnique) {
+
+      orderId = Math.floor(100000 + Math.random() * 900000).toString();
+  
+      const orderRef = await firestore().collection('orders').doc(orderId).get();
+      isUnique = !orderRef.exists;
+    }
+  
+    return orderId;
+  };
+
   const createOrder = async cartItems => {
     try {
+
+      const orderId = await generateUniqueOrderId();
+      const timestamp = firestore.FieldValue.serverTimestamp();
+      const formattedTimestamp = format(new Date(), 'eeee, MMMM do, yyyy hh:mm a');
      
       const orderData = {
         items: cartItems.map(item => ({
@@ -120,16 +140,16 @@ const HomeMenu = ({navigation}) => {
           completed: false,
         })),
         total: totalPrice,
-        createdAt: firestore.FieldValue.serverTimestamp(),
+        createdAt: formattedTimestamp,
         status: 'received',
         party: selectedParty
           ? firestore().collection('parties').doc(selectedParty.id)
           : null,
       };
 
-      const orderRef = await firestore().collection('orders').add(orderData);
+      await firestore().collection('orders').doc(orderId).set(orderData);
 
-      console.log('Order added!', orderRef.id);
+      console.log('Order added with ID:', orderId);
 
       // Update the quantity of items in the items collection
       const batch = firestore().batch();
@@ -143,7 +163,7 @@ const HomeMenu = ({navigation}) => {
       await batch.commit();
       console.log('Items quantity updated!');
 
-      return orderRef.id;
+      return orderId;
     } catch (error) {
       console.error('Error creating order: ', error);
       throw new Error('Order creation failed');

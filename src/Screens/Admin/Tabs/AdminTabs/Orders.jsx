@@ -10,10 +10,11 @@ import {
 import firestore from '@react-native-firebase/firestore';
 import {createMaterialTopTabNavigator} from '@react-navigation/material-top-tabs';
 import ProgressBar from 'react-native-progress/Bar';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const Tab = createMaterialTopTabNavigator();
 
-const OrdersReceived = ({orders, handleAccept}) => {
+const OrdersReceived = ({orders, handleAccept, handleCancel}) => {
   const [expandedOrder, setExpandedOrder] = useState(null);
 
   const toggleExpandOrder = orderId => {
@@ -23,30 +24,44 @@ const OrdersReceived = ({orders, handleAccept}) => {
   const renderOrderItem = ({item}) => {
     const isExpanded = expandedOrder === item.orderId;
     return (
-      <TouchableOpacity onPress={() => toggleExpandOrder(item.orderId)}>
-        <View style={styles.orderItem}>
-          <Text style={styles.totalText}>Order No: {item.orderId}</Text>
-          <Text style={styles.totalText}>Total: {item.data.total}</Text>
-          <Text style={styles.dateText}>
-            Date: {item.data.createdAt?.toDate().toString()}
-          </Text>
-          {isExpanded && (
-            <FlatList
-              data={item.data.items}
-              keyExtractor={(item, index) => index.toString()}
-              renderItem={renderOrderProduct}
-            />
-          )}
+      <View style={styles.orderItem}>
+        <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+          <Text style={styles.totalText}>Order No: #{item.orderId}</Text>
           <TouchableOpacity
-            style={[
-              styles.acceptButton,
-              isExpanded && styles.acceptButtonExpanded,
-            ]}
+            style={styles.expandButton}
+            onPress={() => toggleExpandOrder(item.orderId)}>
+            <Icon
+              name={isExpanded ? 'expand-less' : 'expand-more'}
+              size={24}
+              color="#000"
+            />
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.cartText}>
+          {item.data.items.length} Items | {'\u20B9'} {item.data.total}
+        </Text>
+        <Text style={styles.dateText}>{item.data.createdAt}</Text>
+
+        {isExpanded && (
+          <FlatList
+            data={item.data.items}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={renderOrderProduct}
+          />
+        )}
+        <View style={{flexDirection: 'row', justifyContent: 'space-evenly'}}>
+          <TouchableOpacity
+            style={[styles.acceptButton, isExpanded]}
             onPress={() => handleAccept(item.orderId)}>
             <Text style={styles.acceptButtonText}>Accept</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.cancelButton, isExpanded]}
+            onPress={() => handleCancel(item.orderId)}>
+            <Text style={styles.acceptButtonText}>Cancel</Text>
+          </TouchableOpacity>
         </View>
-      </TouchableOpacity>
+      </View>
     );
   };
 
@@ -74,6 +89,8 @@ const OrdersReceived = ({orders, handleAccept}) => {
   );
 };
 
+//pending order component...........................................................
+
 const PendingOrder = ({orders, handleComplete, setOrders}) => {
   const [expandedOrder, setExpandedOrder] = useState(null);
 
@@ -85,16 +102,13 @@ const PendingOrder = ({orders, handleComplete, setOrders}) => {
   const handleCompleteItem = async (orderId, itemId) => {
     const orderRef = firestore().collection('orders').doc(orderId);
 
-    // Get the current items
     const orderSnapshot = await orderRef.get();
     const currentItems = orderSnapshot.data().items;
 
-    // Update the item's completion status
     const updatedItems = currentItems.map(item =>
       item.id === itemId ? {...item, completed: true} : item,
     );
 
-    // Update the order in Firestore
     await orderRef.update({items: updatedItems});
 
     // Update the state locally
@@ -125,44 +139,54 @@ const PendingOrder = ({orders, handleComplete, setOrders}) => {
     const isExpanded = expandedOrder === item.orderId;
 
     return (
-      <TouchableOpacity onPress={() => toggleExpandOrder(item.orderId)}>
-        <View style={styles.orderItem}>
-          <Text style={styles.totalText}>Order No: {item.orderId}</Text>
-          <Text style={styles.totalText}>Total: {item.data.total}</Text>
-          <Text style={styles.dateText}>
-            Date: {item.data.createdAt?.toDate().toString()}
-          </Text>
-          <View style={styles.progressContainer}>
-            <ProgressBar
-              styleAttr="Horizontal"
-              indeterminate={false}
-              progress={progress / 100}
-              color="#FF7722"
+      <View style={styles.orderItem}>
+        {/* <View style={styles.progressContainer}>
+          <ProgressBar
+            styleAttr="Horizontal"
+            indeterminate={false}
+            progress={progress / 100}
+            color="#FF7722"
+          />
+          <Text style={styles.progressText}>{`${progress.toFixed(0)}%`}</Text>
+        </View> */}
+        <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+          <Text style={styles.totalText}>Order No: #{item.orderId}</Text>
+          <TouchableOpacity
+            style={styles.expandButton}
+            onPress={() => toggleExpandOrder(item.orderId)}>
+            <Icon
+              name={isExpanded ? 'expand-less' : 'expand-more'}
+              size={24}
+              color="#000"
             />
-            <Text style={styles.progressText}>{`${progress.toFixed(0)}%`}</Text>
-          </View>
-          {isExpanded ? (
-            <FlatList
-              data={item.data.items}
-              keyExtractor={(item, index) => index.toString()}
-              renderItem={renderOrderProduct(item.orderId)}
-              ListFooterComponent={
-                <TouchableOpacity
-                  style={styles.completeButton}
-                  onPress={() => handleComplete(item.orderId)}>
-                  <Text style={styles.completeButtonText}>Complete Order</Text>
-                </TouchableOpacity>
-              }
-            />
-          ) : (
-            <TouchableOpacity
-              style={styles.completeButton}
-              onPress={() => handleComplete(item.orderId)}>
-              <Text style={styles.completeButtonText}>Complete Order</Text>
-            </TouchableOpacity>
-          )}
+          </TouchableOpacity>
         </View>
-      </TouchableOpacity>
+        <Text style={styles.cartText}>
+          {item.data.items.length} Items | {'\u20B9'} {item.data.total}
+        </Text>
+        <Text style={styles.dateText}>{item.data.createdAt}</Text>
+
+        {isExpanded ? (
+          <FlatList
+            data={item.data.items}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={renderOrderProduct(item.orderId)}
+            // ListFooterComponent={
+            //   <TouchableOpacity
+            //     style={styles.completeButton}
+            //     onPress={() => handleComplete(item.orderId)}>
+            //     <Text style={styles.completeButtonText}>Complete Order</Text>
+            //   </TouchableOpacity>
+            // }
+          />
+        ) : (
+          <TouchableOpacity
+            style={styles.completeButton}
+            onPress={() => handleComplete(item.orderId)}>
+            <Text style={styles.completeButtonText}>Complete Order</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     );
   };
 
@@ -212,6 +236,10 @@ const PendingOrder = ({orders, handleComplete, setOrders}) => {
 const OrderCompleted = ({orders}) => {
   const [expandedOrder, setExpandedOrder] = useState(null);
 
+  const toggleExpandOrder = orderId => {
+    setExpandedOrder(prevOrderId => (prevOrderId === orderId ? null : orderId));
+  };
+
   const handleRefund = async orderId => {
     try {
       // Update the status of the order to 'refund'
@@ -224,31 +252,43 @@ const OrderCompleted = ({orders}) => {
     }
   };
 
-  const renderOrderItem = ({item}) => (
-    <TouchableOpacity onPress={() => setExpandedOrder(item.orderId)}>
+  const renderOrderItem = ({item}) => {
+    const isExpanded = expandedOrder === item.orderId;
+    return (
       <View style={styles.orderItem}>
-        <Text style={styles.totalText}>Order No: {item.orderId}</Text>
-        <Text style={styles.totalText}>Total: {item.data.total}</Text>
-        <Text style={styles.dateText}>
-          Date: {item.data.createdAt?.toDate().toString()}
-        </Text>
-        {expandedOrder === item.orderId && (
-          <>
-            <FlatList
-              data={item.data.items}
-              keyExtractor={(item, index) => index.toString()}
-              renderItem={renderOrderProduct}
+        <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+          <Text style={styles.totalText}>Order No: #{item.orderId}</Text>
+          <TouchableOpacity
+            style={styles.expandButton}
+            onPress={() => toggleExpandOrder(item.orderId)}>
+            <Icon
+              name={isExpanded ? 'expand-less' : 'expand-more'}
+              size={24}
+              color="#000"
             />
-            <TouchableOpacity
-              style={styles.refundButton}
-              onPress={() => handleRefund(item.orderId)}>
-              <Text style={styles.refundButtonText}>Refund</Text>
-            </TouchableOpacity>
-          </>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.cartText}>
+          {item.data.items.length} Items | {'\u20B9'} {item.data.total}
+        </Text>
+        <Text style={styles.dateText}>{item.data.createdAt}</Text>
+
+        {isExpanded && (
+          <FlatList
+            data={item.data.items}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={renderOrderProduct}
+          />
         )}
+
+        <TouchableOpacity
+          style={[styles.refundButton, isExpanded]}
+          onPress={() => handleRefund(item.orderId)}>
+          <Text style={styles.refundButtonText}>Refund</Text>
+        </TouchableOpacity>
       </View>
-    </TouchableOpacity>
-  );
+    );
+  };
 
   const renderOrderProduct = ({item}) => (
     <View style={styles.itemView}>
@@ -330,6 +370,22 @@ const MyTabs = () => {
     setPendingCount(prevCount => prevCount + 1);
   };
 
+  const handleCancel = async orderId => {
+    await firestore()
+      .collection('orders')
+      .doc(orderId)
+      .update({status: 'canceled'});
+    setOrders(prevOrders =>
+      prevOrders.map(order =>
+        order.orderId === orderId
+          ? {...order, data: {...order.data, status: 'canceled'}}
+          : order,
+      ),
+    );
+
+    setReceivedCount(prevCount => prevCount - 1);
+  };
+
   const handleComplete = async orderId => {
     await firestore()
       .collection('orders')
@@ -363,6 +419,7 @@ const MyTabs = () => {
             {...props}
             orders={orders}
             handleAccept={handleAccept}
+            handleCancel={handleCancel}
           />
         )}
       </Tab.Screen>
@@ -412,8 +469,9 @@ const styles = StyleSheet.create({
   },
   orderItem: {
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderRadius:10,
+    backgroundColor:'pink',
+    margin:10
   },
   totalText: {
     fontSize: 16,
@@ -424,10 +482,18 @@ const styles = StyleSheet.create({
     color: '#555',
   },
   acceptButton: {
-    backgroundColor: '#FF7722',
+    backgroundColor: 'green',
     padding: 10,
     borderRadius: 5,
     marginTop: 10,
+    width: '45%',
+  },
+  cancelButton: {
+    backgroundColor: 'red',
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10,
+    width: '45%',
   },
   acceptButtonText: {
     color: '#fff',
@@ -449,14 +515,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 10,
+    backgroundColor:"lightgreen",
+    borderRadius:10,
+    padding:10
   },
   itemImage: {
     width: 50,
     height: 50,
     marginRight: 10,
+    borderRadius:5
   },
   nameText: {
     fontSize: 14,
+    color:'#000'
   },
   itemInfo: {
     flex: 1,
@@ -477,7 +548,9 @@ const styles = StyleSheet.create({
   progressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: -10,
+    width:'100%'
+
   },
   progressText: {
     marginLeft: 10,
@@ -515,6 +588,10 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '800',
     fontSize: 18,
+  },
+  expandButton: {
+    backgroundColor: 'lightgray',
+    borderRadius: 5,
   },
 });
 
