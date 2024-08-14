@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import Icons from 'react-native-vector-icons/MaterialIcons';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 
 const Party = () => {
   const navigation = useNavigation();
@@ -65,8 +65,9 @@ const Party = () => {
             <Text style={styles.itemtext}>Due Amt.{item.dueAmount}</Text>
             <TouchableOpacity
               style={styles.viewmore}
-              onPress={() => navigation.navigate('PartyDetails', { partyId: item.id })}
-              >
+              onPress={() =>
+                navigation.navigate('PartyDetails', {partyId: item.id})
+              }>
               <Text>View More</Text>
             </TouchableOpacity>
           </View>
@@ -114,7 +115,11 @@ const Party = () => {
               value={gstNumber}
               onChangeText={setgstNumber}
             />
-            <Button title="Add Party" onPress={handleAddUser} />
+            <TouchableOpacity
+              style={styles.uploadBtn}
+              onPress={handleAddUser}>
+              <Text style={{color: '#Fff'}}>Add Party</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -139,7 +144,7 @@ const styles = StyleSheet.create({
   addButton: {
     position: 'absolute',
     bottom: 35,
-    right: 25,
+    right: 35,
     backgroundColor: '#FF7722',
     borderRadius: 50,
     padding: 10,
@@ -168,15 +173,25 @@ const styles = StyleSheet.create({
   itemtext: {
     fontSize: 15,
     fontWeight: '600',
-    width:'33%'
+    width: '33%',
   },
-  viewmore:{
-    backgroundColor:'white',
-    borderRadius:5,
-    padding:5,
-    width:'23%'
-    
-  }
+  viewmore: {
+    backgroundColor: 'white',
+    borderRadius: 5,
+    padding: 5,
+    width: '23%',
+  },
+  uploadBtn: {
+    backgroundColor: '#FF7722',
+    width: '100%',
+    height: 40,
+    borderRadius: 10,
+    alignSelf: 'center',
+    marginTop: 10,
+    marginBottom: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 });
 
 export default Party;

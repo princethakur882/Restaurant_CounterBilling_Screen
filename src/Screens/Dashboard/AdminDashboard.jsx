@@ -18,11 +18,7 @@ const AdminDashboard = () => {
       ) : selectedTab == 1 ? (
         <Party />
       ) : selectedTab == 2 ? (
-        <Add />
-      ) : selectedTab == 3 ? (
         <MyTabs />
-      ) : selectedTab == 4 ? (
-        <User />
       ) : (
         <User />
       )}
@@ -55,21 +51,10 @@ const AdminDashboard = () => {
           onPress={() => {
             setSelectedTab(2);
           }}>
-          <Icons
-            name="plus-circle"
-            size={30}
-            color={selectedTab == 2 ? '#FF7722' : 'gray'}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.bottomTab}
-          onPress={() => {
-            setSelectedTab(3);
-          }}>
           <Icon
             name="shopping-cart"
             size={28}
-            color={selectedTab == 3 ? '#FF7722' : 'gray'}
+            color={selectedTab == 2 ? '#FF7722' : 'gray'}
           />
         </TouchableOpacity>
         <TouchableOpacity
@@ -80,7 +65,7 @@ const AdminDashboard = () => {
           <Icons
             name="user-alt"
             size={23}
-            color={selectedTab == 4 ? '#FF7722' : 'gray'}
+            color={selectedTab == 3 ? '#FF7722' : 'gray'}
           />
         </TouchableOpacity>
       </View>

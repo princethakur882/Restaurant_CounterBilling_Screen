@@ -128,7 +128,7 @@ const HomeMenu = ({navigation}) => {
 
       const orderId = await generateUniqueOrderId();
       const timestamp = firestore.FieldValue.serverTimestamp();
-      const formattedTimestamp = format(new Date(), 'eeee, MMMM do, yyyy hh:mm a');
+      const formattedTimestamp = format(new Date(), 'eeee, do MMMM yyyy, hh:mm a');
      
       const orderData = {
         items: cartItems.map(item => ({

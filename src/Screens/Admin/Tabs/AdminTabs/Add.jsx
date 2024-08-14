@@ -23,7 +23,7 @@ const Add = () => {
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.CAMERA,
         {
-          title: 'Cool Photo App Camera Permission',
+          title: 'OpenStore Camera Permission',
           message:
             'OpenStore needs access to your camera ' +
             'so you can take awesome pictures.',

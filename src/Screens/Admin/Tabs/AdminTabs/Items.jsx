@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -5,25 +6,39 @@ import {
   FlatList,
   Image,
   TouchableOpacity,
+  TextInput,
+  Modal,
+  PermissionsAndroid,
 } from 'react-native';
-import React, {useEffect, useState} from 'react';
 import firestore from '@react-native-firebase/firestore';
-import {useIsFocused, useNavigation} from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { launchImageLibrary } from 'react-native-image-picker';
+import storage from '@react-native-firebase/storage';
 
 const Items = () => {
   const isFocused = useIsFocused();
   const navigation = useNavigation();
   const [items, setItems] = useState([]);
+  const [isModalVisible, setModalVisible] = useState(false);
+  const [imageData, setImageData] = useState(null);
+  const [name, setName] = useState('');
+  const [quantity, setQuantity] = useState();
+  const [price, setPrice] = useState(0);
+  const [imageUrl, setImageUrl] = useState('');
+
   useEffect(() => {
-    getItems();
+    if (isFocused) {
+      getItems();
+    }
   }, [isFocused]);
+
   const getItems = () => {
     firestore()
       .collection('items')
       .get()
       .then(querySnapshot => {
-        let tempData = [];
+        const tempData = [];
         querySnapshot.forEach(documentSnapshot => {
           tempData.push({
             id: documentSnapshot.id,
@@ -44,11 +59,131 @@ const Items = () => {
       });
   };
 
-  // const Homerender = () => {
-  //   useEffect(() => {
-  //     getItems();
-  //   }, []);
-  // };
+  const handleAddItem = () => {
+    if (name && price && quantity && imageData) {
+      uploadImage();
+    } else {
+      alert('Please fill all fields');
+    }
+  };
+
+  const requestCameraPermission = async () => {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.CAMERA,
+        {
+          title: 'OpenStore Camera Permission',
+          message:
+            'OpenStore needs access to your camera ' +
+            'so you can take awesome pictures.',
+          buttonNeutral: 'Ask Me Later',
+          buttonNegative: 'Cancel',
+          buttonPositive: 'OK',
+        },
+      );
+      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+        console.log('You can use the camera');
+        openGallery();
+      } else {
+        console.log('Camera permission denied');
+      }
+    } catch (err) {
+      console.warn(err);
+    }
+  };
+
+  const openGallery = async () => {
+    const result = await launchImageLibrary({ mediaType: 'photo' });
+    if (result.didCancel) {
+    } else {
+      console.log(result);
+      setImageData(result);
+    }
+  };
+
+  const uploadImage = async () => {
+    const reference = storage().ref(imageData.assets[0].fileName);
+    const pathToFile = imageData.assets[0].uri;
+    // uploads file
+    await reference.putFile(pathToFile);
+    const url = await storage()
+      .ref(imageData.assets[0].fileName)
+      .getDownloadURL();
+    console.log(url);
+    uploadItem(url);
+  };
+
+  const uploadItem = url => {
+    firestore()
+      .collection('items')
+      .add({
+        name,
+        price,
+        quantity: Number(quantity),
+        imageUrl: url,
+      })
+      .then(() => {
+        console.log('Item added!');
+        resetForm();
+      });
+  };
+
+  const handleQuantityChange = (text) => {
+    const numericQuantity = Number(text);
+    setQuantity(numericQuantity);
+  };
+
+  const resetForm = () => {
+    setImageData(null);
+    setName('');
+    setPrice('');
+    setQuantity('');
+    setImageUrl('');
+    setModalVisible(false);
+  };
+
+  const renderItem = ({ item }) => {
+    const { name, price, imageUrl, quantity } = item.data;
+    return (
+      <View style={styles.itemView}>
+        <Image source={{ uri: imageUrl }} style={styles.itemImage} />
+        <View style={styles.nameView}>
+          <Text style={styles.nameText}>{name}</Text>
+          <View style={styles.priceView}>
+            <Text style={styles.priceText}>{'\u20B9' + price}</Text>
+          </View>
+          <View style={styles.qty}>
+            <Text style={styles.qtyText}>{'Qty. ' + quantity}</Text>
+          </View>
+        </View>
+        <View style={{ margin: 10 }}>
+          <TouchableOpacity
+            onPress={() => {
+              navigation.navigate('EditItems', {
+                data: item.data,
+                id: item.id,
+              });
+            }}>
+            <Icon
+              name="edit"
+              size={20}
+              style={[styles.icon, { color: 'green' }]}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              deleteItem(item.id);
+            }}>
+            <Icon
+              name="delete"
+              size={20}
+              style={[styles.icon, { marginTop: 20, color: 'red' }]}
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -65,56 +200,82 @@ const Items = () => {
         </TouchableOpacity>
       </View>
       <FlatList
-      style={{marginBottom:60}}
+        style={{ marginBottom: 60 }}
         data={items}
-        renderItem={({item}) => {
-          const {name, price, imageUrl, quantity} = item.data;
-          return (
-            <View style={styles.itemView}>
-              <Image source={{uri: imageUrl}} style={styles.itemImage} />
-              <View style={styles.nameView}>
-                <Text style={styles.nameText}>{name}</Text>
-                <View style={styles.priceView}>
-                  <Text style={styles.priceText}>{'\u20B9' + price}</Text>
-                </View>
-                <View style={styles.qty}>
-                  <Text style={styles.qtyText}>{'Qty. ' + quantity}</Text>
-                </View>
-              </View>
-              <View style={{margin: 10}}>
-                <TouchableOpacity
-                  onPress={() => {
-                    navigation.navigate('EditItems', {
-                      data: item.data,
-                      id: item.id,
-                    });
-                  }}>
-                  <Icon
-                    name="edit-document"
-                    size={20}
-                    style={[styles.icon, {color: 'green'}]}
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    deleteItem(item.id);
-                  }}>
-                  <Icon
-                    name="delete"
-                    size={20}
-                    style={[styles.icon, {marginTop: 20, color: 'red'}]}
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
-          );
-        }}
+        renderItem={renderItem}
+        keyExtractor={item => item.id}
       />
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={() => setModalVisible(true)}>
+        <Icon name="add" size={45} color="#fff" />
+      </TouchableOpacity>
+      <Modal
+        transparent={true}
+        visible={isModalVisible}
+        onRequestClose={() => setModalVisible(false)}
+        animationType="slide">
+        <View style={styles.modalBackground}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity
+              style={{ marginLeft: 260 }}
+              onPress={() => setModalVisible(false)}>
+              <Icon name="cancel" size={25} color="gray" />
+            </TouchableOpacity>
+            {imageData !== null ? (
+              <Image
+                source={{ uri: imageData.assets[0].uri }}
+                style={styles.imageStyle}
+              />
+            ) : null}
+            <TextInput
+              placeholder="Enter Item Name"
+              style={styles.inputStyle}
+              value={name}
+              onChangeText={text => setName(text)}
+            />
+            <TextInput
+              placeholder="Enter Item Price"
+              style={styles.inputStyle}
+              value={price}
+              onChangeText={text => setPrice(text)}
+              keyboardType="numeric"
+            />
+            <TextInput
+              placeholder="Enter Item Quantity"
+              style={styles.inputStyle}
+              value={quantity}
+              onChangeText={handleQuantityChange}
+              keyboardType="numeric"
+            />
+            <TextInput
+              placeholder="Enter Item Image URL"
+              style={styles.inputStyle}
+              value={imageUrl}
+              onChangeText={text => setImageUrl(text)}
+            />
+            <Text style={{ alignSelf: 'center', marginTop: 20 }}>OR</Text>
+            <TouchableOpacity
+              style={styles.pickBtn}
+              onPress={() => {
+                requestCameraPermission();
+              }}>
+              <Text>Pick Image From Gallery</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.uploadBtn}
+              onPress={handleAddItem}>
+              <Text style={{ color: '#fff' }}>Upload Item</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
 
 export default Items;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -137,7 +298,7 @@ const styles = StyleSheet.create({
     margin: 5,
   },
   nameView: {
-    justifyContent:'space-between',
+    justifyContent: 'space-between',
     width: '53%',
     margin: 10,
   },
@@ -168,9 +329,6 @@ const styles = StyleSheet.create({
   icon: {
     width: 24,
     height: 24,
-    // borderWidth:1,
-    // borderColor:'black',
-    // borderRadius:5,
   },
   login: {
     flexDirection: 'row',
@@ -206,17 +364,72 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingTop: 8,
   },
-  qty:{
-    borderRadius:5,
-    width:55,
-    backgroundColor:"#C5C6C7",
-    alignItems:'center',
-    height:30
+  qty: {
+    borderRadius: 5,
+    width: 55,
+    backgroundColor: '#C5C6C7',
+    alignItems: 'center',
+    height: 30,
   },
-  qtyText:{
-    paddingTop:6,
-    fontSize:13,
-    color:'black',
-    fontWeight:'bold'
+  qtyText: {
+    paddingTop: 6,
+    fontSize: 13,
+    color: 'black',
+    fontWeight: 'bold',
+  },
+  addButton: {
+    position: 'absolute',
+    bottom: 35,
+    right: 35,
+    backgroundColor: '#FF7722',
+    borderRadius: 50,
+    padding: 10,
+    elevation: 5,
+    marginBottom: 50,
+  },
+  modalBackground: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  imageStyle: {
+    height: 200,
+    width: 200,
+    marginBottom: 20,
+  },
+  inputStyle: {
+    height: 40,
+    width: '90%',
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    marginBottom: 10,
+    paddingHorizontal: 10,
+  },
+  pickBtn: {
+    height: 40,
+    width: '90%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    marginTop: 20,
+    borderRadius: 10,
+  },
+  uploadBtn: {
+    height: 40,
+    width: '90%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FF7722',
+    marginTop: 20,
+    borderRadius: 10,
   },
 });
