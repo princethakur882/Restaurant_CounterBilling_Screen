@@ -116,7 +116,6 @@ const MyTabs = () => {
     );
   };
   
-
   return (
     <Tab.Navigator>
       <Tab.Screen
@@ -189,14 +188,15 @@ const styles = StyleSheet.create({
   },
   tabLabelText: {
     fontSize: 14,
-    color: 'black',
+    color: '#FF7722',
   },
   tabLabelActive: {
+    fontSize: 15,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#FF7722',
   },
   countBadge: {
-    backgroundColor: 'red',
+    backgroundColor: '#FF7722',
     borderRadius: 8,
     paddingHorizontal: 6,
     paddingVertical: 2,

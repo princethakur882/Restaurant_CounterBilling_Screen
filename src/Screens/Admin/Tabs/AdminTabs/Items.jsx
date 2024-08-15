@@ -123,7 +123,7 @@ const Items = () => {
         imageUrl: url,
       })
       .then(() => {
-        console.log('Item added!');
+        console.log('Item added !');
         resetForm();
       });
   };
