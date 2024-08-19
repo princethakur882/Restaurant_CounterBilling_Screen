@@ -41,12 +41,21 @@ const MyTabs = () => {
   const getAllOrders = async () => {
     const snapshot = await firestore().collection('orders').get();
     let tempData = [];
+    
     snapshot.forEach(documentSnapshot => {
+      const data = documentSnapshot.data();
+      
+      // Convert Firestore timestamp to Date or formatted string
+      if (data.createdAt && data.createdAt._seconds) {
+        data.createdAt = new Date(data.createdAt._seconds * 1000).toLocaleString();
+      }
+  
       tempData.push({
         orderId: documentSnapshot.id,
-        data: documentSnapshot.data(),
+        data: data,
       });
     });
+    
     setOrders(tempData);
     setReceivedCount(
       tempData.filter(order => order.data.status === 'received').length
@@ -55,6 +64,7 @@ const MyTabs = () => {
       tempData.filter(order => order.data.status === 'pending').length
     );
   };
+  
 
   const handleAccept = async orderId => {
     await firestore()
@@ -209,4 +219,3 @@ const styles = StyleSheet.create({
 });
 
 export default MyTabs;
-

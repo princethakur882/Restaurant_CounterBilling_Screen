@@ -4,7 +4,6 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import Icons from 'react-native-vector-icons/FontAwesome5';
 import Items from '../Admin/Tabs/AdminTabs/Items';
 import Party from '../Admin/Tabs/AdminTabs/Party';
-// import Add from '../Admin/Tabs/ExtraTabs/Add';
 import User from '../Admin/Tabs/AdminTabs/User';
 import MyTabs from '../Admin/Tabs/AdminTabs/Orders';
 
