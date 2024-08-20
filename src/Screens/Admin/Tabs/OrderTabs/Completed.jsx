@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
   orderItem: {
     padding: 16,
     borderRadius: 10,
-    backgroundColor: '#173B45',
+    backgroundColor: '#6da35a',
     margin: 10,
   },
   totalText: {
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 10,
-    backgroundColor: "#B43F3F",
+    backgroundColor: "#4c81ba",
     borderRadius: 10,
     padding: 10,
   },

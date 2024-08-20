@@ -172,7 +172,7 @@ const Items = () => {
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {
-              deleteItem(item.id);
+              (item.id);
             }}>
             <Icon
               name="delete"

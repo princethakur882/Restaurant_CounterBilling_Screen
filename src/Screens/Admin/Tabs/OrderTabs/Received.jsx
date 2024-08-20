@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 10,
-    backgroundColor: '#B43F3F',
+    backgroundColor: '#30d15b',
     borderRadius: 10,
     padding: 10,
   },

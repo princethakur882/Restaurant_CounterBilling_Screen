@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -8,16 +8,12 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
-import ProgressBar from 'react-native-progress/Bar';
+import CheckBox from '@react-native-community/checkbox';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import Icons from 'react-native-vector-icons/AntDesign';
 
-const PendingOrder = ({ orders, handleComplete, setOrders }) => {
+const PendingOrder = ({orders, handleComplete, setOrders}) => {
   const [expandedOrder, setExpandedOrder] = useState(null);
-
-  const calculateProgress = items => {
-    const completedItems = items.filter(item => item.completed).length;
-    return (completedItems / items.length) * 100;
-  };
 
   const handleCompleteItem = async (orderId, itemId) => {
     const orderRef = firestore().collection('orders').doc(orderId);
@@ -26,19 +22,22 @@ const PendingOrder = ({ orders, handleComplete, setOrders }) => {
     const currentItems = orderSnapshot.data().items;
 
     const updatedItems = currentItems.map(item =>
-      item.id === itemId ? { ...item, completed: true } : item,
+      item.id === itemId ? {...item, completed: true} : item,
     );
 
-    await orderRef.update({ items: updatedItems });
+    // Sort the updated items so that completed ones are at the top
+    const sortedItems = updatedItems.sort((a, b) => b.completed - a.completed);
+
+    await orderRef.update({items: sortedItems});
 
     // Update the state locally
     setOrders(prevOrders =>
       prevOrders.map(order => {
         if (order.orderId === orderId) {
-          const allCompleted = updatedItems.every(item => item.completed);
+          const allCompleted = sortedItems.every(item => item.completed);
           const updatedOrder = {
             ...order,
-            data: { ...order.data, items: updatedItems },
+            data: {...order.data, items: sortedItems},
           };
           if (allCompleted) {
             handleComplete(orderId);
@@ -54,18 +53,16 @@ const PendingOrder = ({ orders, handleComplete, setOrders }) => {
     setExpandedOrder(prevOrderId => (prevOrderId === orderId ? null : orderId));
   };
 
-  const renderOrderItem = ({ item }) => {
-    const progress = calculateProgress(item.data.items);
+  const renderOrderItem = ({item}) => {
     const isExpanded = expandedOrder === item.orderId;
 
     return (
       <View style={styles.orderItem}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
           <Text style={styles.totalText}>Order No: #{item.orderId}</Text>
           <TouchableOpacity
             style={styles.expandButton}
-            onPress={() => toggleExpandOrder(item.orderId)}
-          >
+            onPress={() => toggleExpandOrder(item.orderId)}>
             <Icon
               name={isExpanded ? 'expand-less' : 'expand-more'}
               size={24}
@@ -87,8 +84,7 @@ const PendingOrder = ({ orders, handleComplete, setOrders }) => {
         ) : (
           <TouchableOpacity
             style={styles.completeButton}
-            onPress={() => handleComplete(item.orderId)}
-          >
+            onPress={() => handleComplete(item.orderId)}>
             <Text style={styles.completeButtonText}>Complete Order</Text>
           </TouchableOpacity>
         )}
@@ -98,40 +94,43 @@ const PendingOrder = ({ orders, handleComplete, setOrders }) => {
 
   const renderOrderProduct =
     orderId =>
-    ({ item }) =>
+    ({item}) =>
       (
-        <View style={styles.itemView}>
-          <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
+        <View
+          style={[
+            styles.itemView,
+            {backgroundColor: item.completed ? '#30d15b' : '#4c81ba'},
+          ]}>
+          <CheckBox
+            value={item.completed}
+            onValueChange={() => handleCompleteItem(orderId, item.id)}
+            style={styles.itemCheckbox}
+          />
+          <Image source={{uri: item.imageUrl}} style={styles.itemImage} />
           <View style={styles.itemInfo}>
-            <Text style={styles.nameText}>{item.name}</Text>
-            <Text style={styles.nameText}>
+            <Text
+              style={[
+                styles.nameText,
+                {color: item.completed ? '#000' : '#fff'},
+              ]}>
+              {item.name}
+            </Text>
+            <Text
+              style={[
+                styles.nameText,
+                {color: item.completed ? '#000' : '#fff'},
+              ]}>
               {'Price: ' + item.price + ', Qty: ' + item.quantity}
             </Text>
-            <View style={styles.itemActions}>
-              <ProgressBar
-                styleAttr="Horizontal"
-                indeterminate={false}
-                progress={item.completed ? 1 : 0}
-                color="green"
-                style={styles.itemProgressBar}
-              />
-              {!item.completed && (
-                <TouchableOpacity
-                  style={styles.completeItemButton}
-                  onPress={() => handleCompleteItem(orderId, item.id)}
-                >
-                  <Text style={styles.completeButtonText}>Complete</Text>
-                </TouchableOpacity>
-              )}
-            </View>
           </View>
+          <Icons name="minuscircle" size={24} color="red" />
         </View>
       );
 
   return (
     <View style={styles.container}>
       <FlatList
-        style={{ marginBottom: 60 }}
+        style={{marginBottom: 60}}
         data={orders.filter(order => order.data.status === 'pending')}
         keyExtractor={(item, index) => index.toString()}
         renderItem={renderOrderItem}
@@ -148,7 +147,7 @@ const styles = StyleSheet.create({
   orderItem: {
     padding: 16,
     borderRadius: 10,
-    backgroundColor: '#173B45',
+    backgroundColor: '#FF7722',
     margin: 10,
   },
   totalText: {
@@ -190,24 +189,19 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   nameText: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '800',
+  },
+  detailText: {
     fontSize: 14,
     color: '#fff',
   },
   itemInfo: {
     flex: 1,
   },
-  itemActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  itemProgressBar: {
-    flex: 1,
-  },
-  completeItemButton: {
-    backgroundColor: 'green',
-    padding: 5,
-    borderRadius: 5,
-    marginLeft: 10,
+  itemCheckbox: {
+    marginRight: 10,
   },
   expandButton: {
     backgroundColor: 'lightgray',
