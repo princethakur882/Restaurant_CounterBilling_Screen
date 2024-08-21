@@ -20,7 +20,7 @@ const OrdersReceived = ({ orders, handleAccept, handleCancel }) => {
     const isExpanded = expandedOrder === item.orderId;
     return (
       <View style={styles.orderItem}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        <View style={styles.orderHeader}>
           <Text style={styles.totalText}>Order No: #{item.orderId}</Text>
           <TouchableOpacity
             style={styles.expandButton}
@@ -29,7 +29,7 @@ const OrdersReceived = ({ orders, handleAccept, handleCancel }) => {
             <Icon
               name={isExpanded ? 'expand-less' : 'expand-more'}
               size={24}
-              color="#000"
+              color="#FF7722"
             />
           </TouchableOpacity>
         </View>
@@ -45,18 +45,18 @@ const OrdersReceived = ({ orders, handleAccept, handleCancel }) => {
             renderItem={renderOrderProduct}
           />
         )}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-evenly' }}>
+        <View style={styles.buttonContainer}>
           <TouchableOpacity
-            style={[styles.acceptButton, isExpanded]}
+            style={styles.acceptButton}
             onPress={() => handleAccept(item.orderId)}
           >
             <Text style={styles.acceptButtonText}>Accept</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.cancelButton, isExpanded]}
+            style={styles.cancelButton}
             onPress={() => handleCancel(item.orderId)}
           >
-            <Text style={styles.acceptButtonText}>Cancel</Text>
+            <Text style={styles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -90,47 +90,68 @@ const OrdersReceived = ({ orders, handleAccept, handleCancel }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFF2E5',
   },
   orderItem: {
     padding: 16,
     borderRadius: 10,
-    backgroundColor: '#173B45',
+    backgroundColor: '#FFF2E5',
     margin: 10,
+    borderColor: '#FF7722',
+    borderWidth: 1,
+    shadowColor: '#FF7722',
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  orderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   totalText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#333',
   },
   dateText: {
     fontSize: 14,
-    color: '#fff',
+    color: '#666',
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    marginTop: 10,
   },
   acceptButton: {
-    backgroundColor: 'green',
+    backgroundColor: '#2E7D32',
     padding: 10,
     borderRadius: 5,
-    marginTop: 10,
     width: '45%',
   },
   cancelButton: {
-    backgroundColor: 'red',
+    backgroundColor: '#E74C3C',
     padding: 10,
     borderRadius: 5,
-    marginTop: 10,
     width: '45%',
   },
   acceptButtonText: {
-    color: '#fff',
+    color: '#FFF',
     fontSize: 14,
     textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  cancelButtonText: {
+    color: '#FFF',
+    fontSize: 14,
+    textAlign: 'center',
+    fontWeight: 'bold',
   },
   itemView: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 10,
-    backgroundColor: '#30d15b',
+    backgroundColor: '#FFD5B0',
     borderRadius: 10,
     padding: 10,
   },
@@ -142,14 +163,16 @@ const styles = StyleSheet.create({
   },
   nameText: {
     fontSize: 14,
-    color: '#fff',
+    color: '#333',
   },
   expandButton: {
-    backgroundColor: 'lightgray',
+    backgroundColor: '#E0E0E0',
     borderRadius: 5,
+    // padding: 5,
   },
   cartText: {
-    color: '#fff',
+    color: '#333',
+    marginTop: 5,
   },
 });
 

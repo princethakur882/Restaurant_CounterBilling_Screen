@@ -55,7 +55,7 @@ const PartyDetails = ({ route }) => {
             <Text style={styles.orderText}>Order ID: <Text style={styles.valueText}>{order.id}</Text></Text>
             <Text style={styles.orderText}>Status: <Text style={styles.valueText}>{order.status}</Text></Text>
             <Text style={styles.orderText}>Total: <Text style={styles.valueText}>{'\u20B9'}{order.total}</Text></Text>
-            <Text style={styles.orderText}>Created At: <Text style={styles.valueText}>{order.createdAt?.toDate().toLocaleString()}</Text></Text>
+            <Text style={styles.orderText}>Created At: <Text style={styles.valueText}>{order.createdAt}</Text></Text>
             <Text style={styles.orderText}>Items:</Text>
             {order.items.map((item, index) => (
               <Text key={index} style={styles.orderItemText}>

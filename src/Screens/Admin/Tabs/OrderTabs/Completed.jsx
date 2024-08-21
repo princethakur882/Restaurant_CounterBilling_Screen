@@ -36,7 +36,7 @@ const OrderCompleted = ({ orders }) => {
             <Icon
               name={isExpanded ? 'expand-less' : 'expand-more'}
               size={24}
-              color="#000"
+              color="#FF7722"
             />
           </TouchableOpacity>
         </View>
@@ -90,47 +90,53 @@ const OrderCompleted = ({ orders }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFF2E5',
   },
   orderItem: {
     padding: 16,
     borderRadius: 10,
-    backgroundColor: '#6da35a',
+    backgroundColor: '#FFF2E5',
     margin: 10,
+    borderColor: '#FF7722',
+    borderWidth: 1,
+    shadowColor: '#FF7722',
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
   },
   totalText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#333',
   },
   dateText: {
     fontSize: 14,
-    color: '#fff',
+    color: '#666',
   },
   refundButton: {
-    height: 40,
+    backgroundColor: '#E74C3C',
+    padding: 10,
     borderRadius: 5,
-    backgroundColor: 'red',
-    color: 'white',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 20,
-    marginBottom: 10,
+    marginTop: 10,
+    width: '100%',
   },
   expandedRefundButton: {
-    marginTop: 10, // Adjust spacing if needed
+    marginTop: 10, 
   },
   refundButtonText: {
-    color: 'white',
-    fontWeight: '800',
-    fontSize: 18,
+    color: '#FFFFFF',
+    fontSize: 14,
+    textAlign: 'center',
+    fontWeight: 'bold',
   },
   expandButton: {
     backgroundColor: 'lightgray',
     borderRadius: 5,
   },
   cartText: {
-    color: '#fff',
+   fontSize: 14,
+    color: '#666',
+    marginTop:5
   },
   itemView: {
     flexDirection: 'row',

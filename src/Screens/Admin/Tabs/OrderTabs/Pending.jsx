@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import CheckBox from '@react-native-community/checkbox';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Icons from 'react-native-vector-icons/AntDesign';
 
-const PendingOrder = ({orders, handleComplete, setOrders}) => {
+const PendingOrder = ({ orders, handleComplete, setOrders }) => {
   const [expandedOrder, setExpandedOrder] = useState(null);
 
   const handleCompleteItem = async (orderId, itemId) => {
@@ -22,13 +22,13 @@ const PendingOrder = ({orders, handleComplete, setOrders}) => {
     const currentItems = orderSnapshot.data().items;
 
     const updatedItems = currentItems.map(item =>
-      item.id === itemId ? {...item, completed: true} : item,
+      item.id === itemId ? { ...item, completed: true } : item,
     );
 
     // Sort the updated items so that completed ones are at the top
     const sortedItems = updatedItems.sort((a, b) => b.completed - a.completed);
 
-    await orderRef.update({items: sortedItems});
+    await orderRef.update({ items: sortedItems });
 
     // Update the state locally
     setOrders(prevOrders =>
@@ -37,7 +37,7 @@ const PendingOrder = ({orders, handleComplete, setOrders}) => {
           const allCompleted = sortedItems.every(item => item.completed);
           const updatedOrder = {
             ...order,
-            data: {...order.data, items: sortedItems},
+            data: { ...order.data, items: sortedItems },
           };
           if (allCompleted) {
             handleComplete(orderId);
@@ -49,24 +49,53 @@ const PendingOrder = ({orders, handleComplete, setOrders}) => {
     );
   };
 
+  const handleDeleteItem = async (orderId, itemId) => {
+    const orderRef = firestore().collection('orders').doc(orderId);
+
+    const orderSnapshot = await orderRef.get();
+    const currentItems = orderSnapshot.data().items;
+
+    const updatedItems = currentItems.filter(item => item.id !== itemId);
+    const updatedTotal = updatedItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0,
+    );
+
+    await orderRef.update({ items: updatedItems, total: updatedTotal });
+
+    // Update the state locally
+    setOrders(prevOrders =>
+      prevOrders.map(order => {
+        if (order.orderId === orderId) {
+          return {
+            ...order,
+            data: { ...order.data, items: updatedItems, total: updatedTotal },
+          };
+        }
+        return order;
+      }),
+    );
+  };
+
   const toggleExpandOrder = orderId => {
     setExpandedOrder(prevOrderId => (prevOrderId === orderId ? null : orderId));
   };
 
-  const renderOrderItem = ({item}) => {
+  const renderOrderItem = ({ item }) => {
     const isExpanded = expandedOrder === item.orderId;
 
     return (
       <View style={styles.orderItem}>
-        <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+        <View style={styles.orderHeader}>
           <Text style={styles.totalText}>Order No: #{item.orderId}</Text>
           <TouchableOpacity
             style={styles.expandButton}
-            onPress={() => toggleExpandOrder(item.orderId)}>
+            onPress={() => toggleExpandOrder(item.orderId)}
+          >
             <Icon
               name={isExpanded ? 'expand-less' : 'expand-more'}
               size={24}
-              color="#000"
+              color="#FF7722"
             />
           </TouchableOpacity>
         </View>
@@ -84,7 +113,8 @@ const PendingOrder = ({orders, handleComplete, setOrders}) => {
         ) : (
           <TouchableOpacity
             style={styles.completeButton}
-            onPress={() => handleComplete(item.orderId)}>
+            onPress={() => handleComplete(item.orderId)}
+          >
             <Text style={styles.completeButtonText}>Complete Order</Text>
           </TouchableOpacity>
         )}
@@ -94,43 +124,50 @@ const PendingOrder = ({orders, handleComplete, setOrders}) => {
 
   const renderOrderProduct =
     orderId =>
-    ({item}) =>
-      (
-        <View
-          style={[
-            styles.itemView,
-            {backgroundColor: item.completed ? '#30d15b' : '#4c81ba'},
-          ]}>
-          <CheckBox
-            value={item.completed}
-            onValueChange={() => handleCompleteItem(orderId, item.id)}
-            style={styles.itemCheckbox}
-          />
-          <Image source={{uri: item.imageUrl}} style={styles.itemImage} />
-          <View style={styles.itemInfo}>
-            <Text
-              style={[
-                styles.nameText,
-                {color: item.completed ? '#000' : '#fff'},
-              ]}>
-              {item.name}
-            </Text>
-            <Text
-              style={[
-                styles.nameText,
-                {color: item.completed ? '#000' : '#fff'},
-              ]}>
-              {'Price: ' + item.price + ', Qty: ' + item.quantity}
-            </Text>
-          </View>
-          <Icons name="minuscircle" size={24} color="red" />
+    ({ item }) => (
+      <View
+        style={[
+          styles.itemView,
+          { backgroundColor: item.completed ? '#95e381' : '#E74C3C' },
+        ]}
+      >
+        <CheckBox
+          value={item.completed}
+          onValueChange={() => handleCompleteItem(orderId, item.id)}
+          style={styles.itemCheckbox}
+        />
+        <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
+        <View style={styles.itemInfo}>
+          <Text
+            style={[
+              styles.nameText,
+              { color: item.completed ? '#2E7D32' : '#fff' },
+            ]}
+          >
+            {item.name}
+          </Text>
+          <Text
+            style={[
+              styles.detailText,
+              { color: item.completed ? '#2E7D32' : '#fff' },
+            ]}
+          >
+            {'Price: ' + item.price + ', Qty: ' + item.quantity}
+          </Text>
         </View>
-      );
+        <TouchableOpacity
+          onPress={() => handleDeleteItem(orderId, item.id)}
+          style={styles.deleteButton}
+        >
+          <Icons name="minuscircle" size={24} color="#D32F2F" />
+        </TouchableOpacity>
+      </View>
+    );
 
   return (
     <View style={styles.container}>
       <FlatList
-        style={{marginBottom: 60}}
+        style={{ marginBottom: 60 }}
         data={orders.filter(order => order.data.status === 'pending')}
         keyExtractor={(item, index) => index.toString()}
         renderItem={renderOrderItem}
@@ -142,43 +179,56 @@ const PendingOrder = ({orders, handleComplete, setOrders}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFF2E5',
   },
   orderItem: {
     padding: 16,
     borderRadius: 10,
-    backgroundColor: '#FF7722',
+    backgroundColor: '#FFF2E5',
     margin: 10,
+    borderColor: '#FF7722',
+    borderWidth: 1,
+    shadowColor: '#FF7722',
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  orderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   totalText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#333',
   },
   dateText: {
     fontSize: 14,
-    color: '#fff',
+    color: '#666',
   },
   cartText: {
-    color: '#fff',
+    marginTop: 5,
+    color: '#666',
   },
   completeButton: {
-    backgroundColor: 'green',
+    backgroundColor: '#388E3C',
     padding: 10,
     borderRadius: 5,
     marginTop: 10,
     width: '100%',
   },
   completeButtonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 14,
     textAlign: 'center',
+    fontWeight: 'bold',
   },
   itemView: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 10,
-    backgroundColor: '#B43F3F',
+    backgroundColor: '#FFE0B2',
     borderRadius: 10,
     padding: 10,
   },
@@ -190,12 +240,12 @@ const styles = StyleSheet.create({
   },
   nameText: {
     fontSize: 16,
-    color: '#fff',
-    fontWeight: '800',
+    color: '#424242',
+    fontWeight: '600',
   },
   detailText: {
     fontSize: 14,
-    color: '#fff',
+    color: '#757575',
   },
   itemInfo: {
     flex: 1,
@@ -203,8 +253,11 @@ const styles = StyleSheet.create({
   itemCheckbox: {
     marginRight: 10,
   },
+  deleteButton: {
+    marginLeft: 10,
+  },
   expandButton: {
-    backgroundColor: 'lightgray',
+    backgroundColor: '#E0E0E0',
     borderRadius: 5,
   },
 });
