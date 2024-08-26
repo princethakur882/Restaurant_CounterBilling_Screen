@@ -187,7 +187,7 @@ const Items = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.login}>
+      {/* <View style={styles.login}>
         <TouchableOpacity
           style={styles.btn}
           onPress={() => navigation.navigate('HomeMenu')}>
@@ -198,9 +198,8 @@ const Items = () => {
           onPress={() => navigation.navigate('AdminLogIn')}>
           <Text style={styles.admintext}>Admin</Text>
         </TouchableOpacity>
-      </View>
+      </View> */}
       <FlatList
-        style={{ marginBottom: 60 }}
         data={items}
         renderItem={renderItem}
         keyExtractor={item => item.id}
@@ -379,7 +378,7 @@ const styles = StyleSheet.create({
   },
   addButton: {
     position: 'absolute',
-    bottom: 35,
+    bottom: 5,
     right: 35,
     backgroundColor: '#FF7722',
     borderRadius: 50,

@@ -7,13 +7,13 @@ const SelectLogin = ({navigation}) => {
       <Text style={styles.texttype}>Select login Type</Text>
       <TouchableOpacity
         style={styles.btn}
-        onPress={() => navigation.navigate('AdminLogIn')}>
-        <Text style={styles.text}>Admin LogIn</Text>
+        onPress={() => navigation.navigate('UserLogin')}>
+        <Text style={styles.text}>User LogIn</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.btn}
-        onPress={() => navigation.navigate('UserLogin')}>
-        <Text style={styles.text}>User LogIn</Text>
+        onPress={() => navigation.navigate('AdminLogIn')}>
+        <Text style={styles.text}>Admin LogIn</Text>
       </TouchableOpacity>
     </View>
   );

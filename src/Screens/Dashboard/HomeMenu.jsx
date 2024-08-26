@@ -18,7 +18,7 @@ import firestore from '@react-native-firebase/firestore';
 import Icons from 'react-native-vector-icons/MaterialIcons';
 import AddToCartButton from '../DefaultMenu/CartButton';
 import {ApiContext} from '../../Context/ApiProvider';
-import { format } from 'date-fns';
+import {format} from 'date-fns';
 
 const HomeMenu = ({navigation}) => {
   const {
@@ -111,25 +111,26 @@ const HomeMenu = ({navigation}) => {
   const generateUniqueOrderId = async () => {
     let orderId;
     let isUnique = false;
-  
-    while (!isUnique) {
 
+    while (!isUnique) {
       orderId = Math.floor(100000 + Math.random() * 900000).toString();
-  
-      const orderRef = await firestore().collection('orders').doc(orderId).get();
+
+      const orderRef = await firestore()
+        .collection('orders')
+        .doc(orderId)
+        .get();
       isUnique = !orderRef.exists;
     }
-  
+
     return orderId;
   };
 
   const createOrder = async cartItems => {
     try {
-
       const orderId = await generateUniqueOrderId();
       const timestamp = firestore.FieldValue.serverTimestamp();
       const formattedTimestamp = format(new Date(), 'dd/MM/yyyy, hh:mm:ss a');
-     
+
       const orderData = {
         items: cartItems.map(item => ({
           id: item.id,
