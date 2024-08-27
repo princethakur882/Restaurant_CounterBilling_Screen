@@ -1,26 +1,70 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  Image,
-  TouchableOpacity,
-} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity } from 'react-native';
+import firestore from '@react-native-firebase/firestore';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-const OrdersReceived = ({ orders, handleAccept, handleCancel }) => {
+const OrderCompleted = () => {
+  const [orders, setOrders] = useState([]);
   const [expandedOrder, setExpandedOrder] = useState(null);
 
-  const toggleExpandOrder = orderId => {
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const fetchOrders = async () => {
+    try {
+      const snapshot = await firestore().collection('orders').get();
+      let tempData = [];
+
+      snapshot.forEach(documentSnapshot => {
+        const data = documentSnapshot.data();
+        
+        // Convert Firestore timestamp to Date or formatted string
+        if (data.createdAt && data.createdAt._seconds) {
+          data.createdAt = new Date(data.createdAt._seconds * 1000).toLocaleString();
+        }
+
+        tempData.push({
+          orderId: documentSnapshot.id,
+          data: data,
+        });
+      });
+
+      setOrders(tempData.filter(order => order.data.status === 'completed'));
+    } catch (error) {
+      console.error('Error fetching orders: ', error);
+    }
+  };
+
+  const handleRefund = async (orderId) => {
+    try {
+      // Update the status of the order to 'refund'
+      await firestore().collection('orders').doc(orderId).update({ status: 'refund' });
+      console.log(`Order ${orderId} status updated to 'refund'`);
+      
+      // Update local state
+      setOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.orderId === orderId
+            ? { ...order, data: { ...order.data, status: 'refund' } }
+            : order
+        )
+      );
+    } catch (error) {
+      console.error('Error updating order status: ', error);
+    }
+  };
+
+  const toggleExpandOrder = (orderId) => {
     setExpandedOrder(prevOrderId => (prevOrderId === orderId ? null : orderId));
   };
 
   const renderOrderItem = ({ item }) => {
     const isExpanded = expandedOrder === item.orderId;
+
     return (
       <View style={styles.orderItem}>
-        <View style={styles.orderHeader}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           <Text style={styles.totalText}>Order No: #{item.orderId}</Text>
           <TouchableOpacity
             style={styles.expandButton}
@@ -45,20 +89,13 @@ const OrdersReceived = ({ orders, handleAccept, handleCancel }) => {
             renderItem={renderOrderProduct}
           />
         )}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.acceptButton}
-            onPress={() => handleAccept(item.orderId)}
-          >
-            <Text style={styles.acceptButtonText}>Accept</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={() => handleCancel(item.orderId)}
-          >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
+
+        <TouchableOpacity
+          style={[styles.refundButton, isExpanded && styles.expandedRefundButton]}
+          onPress={() => handleRefund(item.orderId)}
+        >
+          <Text style={styles.refundButtonText}>Refund</Text>
+        </TouchableOpacity>
       </View>
     );
   };
@@ -78,7 +115,7 @@ const OrdersReceived = ({ orders, handleAccept, handleCancel }) => {
   return (
     <View style={styles.container}>
       <FlatList
-        data={orders.filter(order => order.data.status === 'received')}
+        data={orders}
         keyExtractor={(item, index) => index.toString()}
         renderItem={renderOrderItem}
       />
@@ -99,14 +136,9 @@ const styles = StyleSheet.create({
     borderColor: '#FF7722',
     borderWidth: 1,
     shadowColor: '#FF7722',
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
-  },
-  orderHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
   },
   totalText: {
     fontSize: 16,
@@ -117,40 +149,36 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    marginTop: 10,
-  },
-  acceptButton: {
-    backgroundColor: '#2E7D32',
-    padding: 10,
-    borderRadius: 5,
-    width: '45%',
-  },
-  cancelButton: {
+  refundButton: {
     backgroundColor: '#E74C3C',
     padding: 10,
     borderRadius: 5,
-    width: '45%',
+    marginTop: 10,
+    width: '100%',
   },
-  acceptButtonText: {
-    color: '#FFF',
+  expandedRefundButton: {
+    marginTop: 10,
+  },
+  refundButtonText: {
+    color: '#FFFFFF',
     fontSize: 14,
     textAlign: 'center',
     fontWeight: 'bold',
   },
-  cancelButtonText: {
-    color: '#FFF',
+  expandButton: {
+    backgroundColor: 'lightgray',
+    borderRadius: 5,
+  },
+  cartText: {
     fontSize: 14,
-    textAlign: 'center',
-    fontWeight: 'bold',
+    color: '#666',
+    marginTop: 5,
   },
   itemView: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 10,
-    backgroundColor: '#FFD5B0',
+    backgroundColor: "#4c81ba",
     borderRadius: 10,
     padding: 10,
   },
@@ -162,17 +190,8 @@ const styles = StyleSheet.create({
   },
   nameText: {
     fontSize: 14,
-    color: '#333',
-  },
-  expandButton: {
-    backgroundColor: '#E0E0E0',
-    borderRadius: 5,
-    // padding: 5,
-  },
-  cartText: {
-    color: '#333',
-    marginTop: 5,
+    color: '#fff',
   },
 });
 
-export default OrdersReceived;
+export default OrderCompleted;

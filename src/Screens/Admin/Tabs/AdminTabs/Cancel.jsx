@@ -1,25 +1,62 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-const OrderCompleted = ({ orders }) => {
+const OrderCanceled = () => {
+  const [orders, setOrders] = useState([]);
   const [expandedOrder, setExpandedOrder] = useState(null);
 
-  const toggleExpandOrder = (orderId) => {
-    setExpandedOrder(prevOrderId => (prevOrderId === orderId ? null : orderId));
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const fetchOrders = async () => {
+    try {
+      const snapshot = await firestore().collection('orders').get();
+      let tempData = [];
+
+      snapshot.forEach(documentSnapshot => {
+        const data = documentSnapshot.data();
+        
+        // Convert Firestore timestamp to Date or formatted string
+        if (data.createdAt && data.createdAt._seconds) {
+          data.createdAt = new Date(data.createdAt._seconds * 1000).toLocaleString();
+        }
+
+        tempData.push({
+          orderId: documentSnapshot.id,
+          data: data,
+        });
+      });
+
+      setOrders(tempData.filter(order => order.data.status === 'canceled'));
+    } catch (error) {
+      console.error('Error fetching orders: ', error);
+    }
   };
 
-  const handleRefund = async (orderId) => {
+  const handleReactivate = async (orderId) => {
     try {
-      // Update the status of the order to 'refund'
-      await firestore().collection('orders').doc(orderId).update({
-        status: 'refund',
-      });
-      console.log(`Order ${orderId} status updated to 'refund'`);
+      // Example action: Mark the order as 'pending' or handle it as needed
+      await firestore().collection('orders').doc(orderId).update({ status: 'pending' });
+      console.log(`Order ${orderId} status updated to 'pending'`);
+      
+      // Update local state
+      setOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.orderId === orderId
+            ? { ...order, data: { ...order.data, status: 'pending' } }
+            : order
+        )
+      );
     } catch (error) {
       console.error('Error updating order status: ', error);
     }
+  };
+
+  const toggleExpandOrder = (orderId) => {
+    setExpandedOrder(prevOrderId => (prevOrderId === orderId ? null : orderId));
   };
 
   const renderOrderItem = ({ item }) => {
@@ -54,10 +91,10 @@ const OrderCompleted = ({ orders }) => {
         )}
 
         <TouchableOpacity
-          style={[styles.refundButton, isExpanded && styles.expandedRefundButton]}
-          onPress={() => handleRefund(item.orderId)}
+          style={[styles.reactivateButton, isExpanded && styles.expandedReactivateButton]}
+          onPress={() => handleReactivate(item.orderId)}
         >
-          <Text style={styles.refundButtonText}>Refund</Text>
+          <Text style={styles.reactivateButtonText}>Reactivate</Text>
         </TouchableOpacity>
       </View>
     );
@@ -78,8 +115,7 @@ const OrderCompleted = ({ orders }) => {
   return (
     <View style={styles.container}>
       <FlatList
-        style={{ marginBottom: 60 }}
-        data={orders.filter(order => order.data.status === 'completed')}
+        data={orders}
         keyExtractor={(item, index) => index.toString()}
         renderItem={renderOrderItem}
       />
@@ -113,17 +149,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
-  refundButton: {
-    backgroundColor: '#E74C3C',
+  reactivateButton: {
+    backgroundColor: '#3498DB',
     padding: 10,
     borderRadius: 5,
     marginTop: 10,
     width: '100%',
   },
-  expandedRefundButton: {
-    marginTop: 10, 
+  expandedReactivateButton: {
+    marginTop: 10,
   },
-  refundButtonText: {
+  reactivateButtonText: {
     color: '#FFFFFF',
     fontSize: 14,
     textAlign: 'center',
@@ -134,9 +170,9 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   cartText: {
-   fontSize: 14,
+    fontSize: 14,
     color: '#666',
-    marginTop:5
+    marginTop: 5,
   },
   itemView: {
     flexDirection: 'row',
@@ -158,4 +194,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default OrderCompleted;
+export default OrderCanceled;

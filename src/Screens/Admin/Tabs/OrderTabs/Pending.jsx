@@ -167,7 +167,6 @@ const PendingOrder = ({ orders, handleComplete, setOrders }) => {
   return (
     <View style={styles.container}>
       <FlatList
-        style={{ marginBottom: 60 }}
         data={orders.filter(order => order.data.status === 'pending')}
         keyExtractor={(item, index) => index.toString()}
         renderItem={renderOrderItem}

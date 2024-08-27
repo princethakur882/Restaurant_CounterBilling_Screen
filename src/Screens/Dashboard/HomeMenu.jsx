@@ -244,7 +244,7 @@ const HomeMenu = ({navigation}) => {
   console.log(cartItems);
   return (
     <View style={styles.container}>
-      <View style={styles.login}>
+      {/* <View style={styles.login}>
         <TouchableOpacity
           style={styles.btn}
           onPress={() => navigation.navigate('HomeMenu')}>
@@ -255,7 +255,7 @@ const HomeMenu = ({navigation}) => {
           onPress={() => navigation.navigate('AdminLogIn')}>
           <Text style={styles.admintext}>Admin</Text>
         </TouchableOpacity>
-      </View>
+      </View> */}
       <TextInput
         style={styles.searchBar}
         placeholder="Search"
@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   flatList: {
-    paddingTop: 60,
+    // paddingTop: 60,
     // paddingBottom:50,
     paddingHorizontal: 4,
   },
@@ -403,8 +403,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   searchBar: {
-    position: 'absolute',
-    top: 50,
+    // position: 'absolute',
+    // top: 50,
     left: 0,
     right: 0,
     padding: 10,
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     elevation: 2,
-    zIndex: 1,
+    // zIndex: 1,
   },
   itemContainer: {
     width: 120,

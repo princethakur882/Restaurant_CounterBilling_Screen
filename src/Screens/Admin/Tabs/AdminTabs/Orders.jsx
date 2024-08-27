@@ -1,22 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
+import React, {useState, useEffect} from 'react';
+import {View, StyleSheet, Text} from 'react-native';
+import {createMaterialTopTabNavigator} from '@react-navigation/material-top-tabs';
 import firestore from '@react-native-firebase/firestore';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import OrderCompleted from '../OrderTabs/Completed';
+import OrderCompleted from './Completed';
 import OrdersReceived from '../OrderTabs/Received';
 import PendingOrder from '../OrderTabs/Pending';
-
-
-
 
 // Define Tab Navigator
 const Tab = createMaterialTopTabNavigator();
 
 // Define TabLabel component
-const TabLabel = ({ title, count, isActive }) => (
-  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+const TabLabel = ({title, count, isActive}) => (
+  <View style={{flexDirection: 'row', alignItems: 'center'}}>
     <Text style={[styles.tabLabelText, isActive && styles.tabLabelActive]}>
       {title}
     </Text>
@@ -41,42 +36,43 @@ const MyTabs = () => {
   const getAllOrders = async () => {
     const snapshot = await firestore().collection('orders').get();
     let tempData = [];
-    
+
     snapshot.forEach(documentSnapshot => {
       const data = documentSnapshot.data();
-      
+
       // Convert Firestore timestamp to Date or formatted string
       if (data.createdAt && data.createdAt._seconds) {
-        data.createdAt = new Date(data.createdAt._seconds * 1000).toLocaleString();
+        data.createdAt = new Date(
+          data.createdAt._seconds * 1000,
+        ).toLocaleString();
       }
-  
+
       tempData.push({
         orderId: documentSnapshot.id,
         data: data,
       });
     });
-    
+
     setOrders(tempData);
     setReceivedCount(
-      tempData.filter(order => order.data.status === 'received').length
+      tempData.filter(order => order.data.status === 'received').length,
     );
     setPendingCount(
-      tempData.filter(order => order.data.status === 'pending').length
+      tempData.filter(order => order.data.status === 'pending').length,
     );
   };
-  
 
   const handleAccept = async orderId => {
     await firestore()
       .collection('orders')
       .doc(orderId)
-      .update({ status: 'pending' });
+      .update({status: 'pending'});
     setOrders(prevOrders =>
       prevOrders.map(order =>
         order.orderId === orderId
-          ? { ...order, data: { ...order.data, status: 'pending' } }
-          : order
-      )
+          ? {...order, data: {...order.data, status: 'pending'}}
+          : order,
+      ),
     );
     setReceivedCount(prevCount => prevCount - 1);
     setPendingCount(prevCount => prevCount + 1);
@@ -86,13 +82,13 @@ const MyTabs = () => {
     await firestore()
       .collection('orders')
       .doc(orderId)
-      .update({ status: 'canceled' });
+      .update({status: 'canceled'});
     setOrders(prevOrders =>
       prevOrders.map(order =>
         order.orderId === orderId
-          ? { ...order, data: { ...order.data, status: 'canceled' } }
-          : order
-      )
+          ? {...order, data: {...order.data, status: 'canceled'}}
+          : order,
+      ),
     );
     setReceivedCount(prevCount => prevCount - 1);
   };
@@ -101,13 +97,13 @@ const MyTabs = () => {
     await firestore()
       .collection('orders')
       .doc(orderId)
-      .update({ status: 'completed' });
+      .update({status: 'completed'});
     setOrders(prevOrders =>
       prevOrders.map(order =>
         order.orderId === orderId
-          ? { ...order, data: { ...order.data, status: 'completed' } }
-          : order
-      )
+          ? {...order, data: {...order.data, status: 'completed'}}
+          : order,
+      ),
     );
     setPendingCount(prevCount => prevCount - 1);
   };
@@ -116,30 +112,29 @@ const MyTabs = () => {
     await firestore()
       .collection('orders')
       .doc(orderId)
-      .update({ status: 'refund' });
+      .update({status: 'refund'});
     setOrders(prevOrders =>
       prevOrders.map(order =>
         order.orderId === orderId
-          ? { ...order, data: { ...order.data, status: 'refund' } }
-          : order
-      )
+          ? {...order, data: {...order.data, status: 'refund'}}
+          : order,
+      ),
     );
   };
-  
+
   return (
     <Tab.Navigator>
       <Tab.Screen
         name="Received"
         options={{
-          tabBarLabel: ({ focused }) => (
+          tabBarLabel: ({focused}) => (
             <TabLabel
               title="Received"
               count={receivedCount}
               isActive={focused}
             />
           ),
-        }}
-      >
+        }}>
         {props => (
           <OrdersReceived
             {...props}
@@ -152,15 +147,14 @@ const MyTabs = () => {
       <Tab.Screen
         name="Preparation"
         options={{
-          tabBarLabel: ({ focused }) => (
+          tabBarLabel: ({focused}) => (
             <TabLabel
               title="Preparation"
               count={pendingCount}
               isActive={focused}
             />
           ),
-        }}
-      >
+        }}>
         {props => (
           <PendingOrder
             {...props}
@@ -170,10 +164,10 @@ const MyTabs = () => {
           />
         )}
       </Tab.Screen>
-      <Tab.Screen
+      {/* <Tab.Screen
         name="Completed"
         options={{
-          tabBarLabel: ({ focused }) => (
+          tabBarLabel: ({focused}) => (
             <TabLabel
               title="Completed"
               count={
@@ -182,14 +176,18 @@ const MyTabs = () => {
               isActive={focused}
             />
           ),
-        }}
-      >
-        {props => <OrderCompleted {...props} orders={orders} handleRefund={handleRefund} />}
-      </Tab.Screen>
+        }}>
+        {props => (
+          <OrderCompleted
+            {...props}
+            orders={orders}
+            handleRefund={handleRefund}
+          />
+        )}
+      </Tab.Screen> */}
     </Tab.Navigator>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {
