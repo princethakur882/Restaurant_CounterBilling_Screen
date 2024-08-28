@@ -1,6 +1,13 @@
 import React, {createContext, useState, useEffect} from 'react';
 import firestore from '@react-native-firebase/firestore';
-import { BluetoothManager, BluetoothEscposPrinter, ALIGN, FONTTYPE } from "tp-react-native-bluetooth-printer";
+import {
+  BluetoothManager,
+  BluetoothEscposPrinter,
+  ALIGN,
+  FONTTYPE,
+} from 'tp-react-native-bluetooth-printer';
+import {PermissionsAndroid, Platform} from 'react-native';
+// import {BluetoothManager} from 'tp-react-native-bluetooth-printer';
 
 const ApiContext = createContext();
 
@@ -32,19 +39,23 @@ const ApiProvider = ({children}) => {
       .catch(error => console.error(error));
   }, []);
 
-  // Filter data based on search 
+  // Filter data based on search
   useEffect(() => {
     if (data.length > 0) {
-      const filteredItems = data.filter(item =>
-        item.data.name &&
-        item.data.name.toLowerCase().includes(searchQuery.toLowerCase()),
+      const filteredItems = data.filter(
+        item =>
+          item.data.name &&
+          item.data.name.toLowerCase().includes(searchQuery.toLowerCase()),
       );
       setFilteredData(filteredItems);
     }
   }, [searchQuery, data]);
 
   const calculateTotalPrice = items => {
-    const total = items.reduce((acc, item) => acc + item.data.price * item.count, 0);
+    const total = items.reduce(
+      (acc, item) => acc + item.data.price * item.count,
+      0,
+    );
     setTotalPrice(total);
   };
 
@@ -109,40 +120,79 @@ const ApiProvider = ({children}) => {
     });
   };
 
-  // Bluetooth connection and printing logic
+  const requestBluetoothPermissions = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
+        ]);
+
+        if (
+          granted['android.permission.BLUETOOTH_SCAN'] ===
+            PermissionsAndroid.RESULTS.GRANTED &&
+          granted['android.permission.BLUETOOTH_CONNECT'] ===
+            PermissionsAndroid.RESULTS.GRANTED
+        ) {
+          console.log('Bluetooth permissions granted');
+        } else {
+          console.log('Bluetooth permissions denied');
+        }
+      } catch (err) {
+        console.warn(err);
+      }
+    }
+  };
+
   useEffect(() => {
-    connectToDevice();
+    requestBluetoothPermissions();
   }, []);
 
+  // Bluetooth connection and printing logic
   const connectToDevice = async () => {
     setLoading(true);
     try {
-      const address = "03:77:3E:72:DA:0E"; 
-      await BluetoothManager.connect(address);
-      setBoundAddress(address);
-      console.log("Connected to device:", address);
+      const pairedDevices = await BluetoothManager.enableBluetooth();
+
+      if (pairedDevices.length === 0) {
+        alert('No paired Bluetooth devices found');
+        return;
+      }
+
+      const deviceAddress = pairedDevices[0].address;
+      await BluetoothManager.connect(deviceAddress);
+      setBoundAddress(deviceAddress);
+      console.log('Connected to device:', deviceAddress);
     } catch (error) {
-      console.error("Error connecting to device:", error);
-      alert("Error connecting to printer");
+      console.error('Error connecting to device:', error);
+      alert(
+        'Failed to connect to the Bluetooth device. Please ensure it is paired and try again.',
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    connectToDevice();
+  }, []);
+
   const formatDate = () => {
     const now = new Date();
-    return now.toLocaleDateString();   
+    return now.toLocaleDateString();
   };
 
   const formatTime = () => {
-    const now = new Date(); 
-    return now.toLocaleTimeString(); 
+    const now = new Date();
+    return now.toLocaleTimeString();
   };
 
-  const printReceipt = async (orderId) => {
+  const printReceipt = async orderId => {
     try {
       if (!boundAddress) {
-        alert("Printer not connected");
+        alert('Printer not connected');
         return;
       }
 
@@ -174,20 +224,25 @@ const ApiProvider = ({children}) => {
         fonttype: FONTTYPE.FONT_A,
       });
       await BluetoothEscposPrinter.setBold(0);
-      await BluetoothEscposPrinter.printText("Items            Qty     Total", {
+      await BluetoothEscposPrinter.printText('Items            Qty     Total', {
         codepage: 0,
         widthtimes: 0.5,
         heigthtimes: 0.5,
         fonttype: FONTTYPE.FONT_A,
       });
-      await BluetoothEscposPrinter.printText("\n--------------------------------\n", { codepage: 0 });
+      await BluetoothEscposPrinter.printText(
+        '\n--------------------------------\n',
+        {codepage: 0},
+      );
 
       for (const item of cartItems) {
-        const itemName = item.data.name.padEnd(15, ' '); 
-        const itemCount = item.count.toString().padStart(4, ' '); 
-        const itemTotal = (item.data.price * item.count).toFixed(2).padStart(11, ' '); 
+        const itemName = item.data.name.padEnd(15, ' ');
+        const itemCount = item.count.toString().padStart(4, ' ');
+        const itemTotal = (item.data.price * item.count)
+          .toFixed(2)
+          .padStart(11, ' ');
         const itemLine = `${itemName} ${itemCount} ${itemTotal}\n`;
-        
+
         await BluetoothEscposPrinter.printerAlign(ALIGN.LEFT);
         await BluetoothEscposPrinter.printText(itemLine, {
           codepage: 0,
@@ -197,15 +252,21 @@ const ApiProvider = ({children}) => {
         });
       }
 
-      await BluetoothEscposPrinter.printText("--------------------------------\n", { codepage: 0 });
+      await BluetoothEscposPrinter.printText(
+        '--------------------------------\n',
+        {codepage: 0},
+      );
       await BluetoothEscposPrinter.setBold(2);
       await BluetoothEscposPrinter.printerAlign(ALIGN.RIGHT);
-      await BluetoothEscposPrinter.printText(`Grand Total: ${totalPrice.toFixed(2)}\n\n\n`, {
-        codepage: 0,
-        widthtimes: 0.5,
-        heigthtimes: 0.5,
-        fonttype: FONTTYPE.FONT_A,
-      });
+      await BluetoothEscposPrinter.printText(
+        `Grand Total: ${totalPrice.toFixed(2)}\n\n\n`,
+        {
+          codepage: 0,
+          widthtimes: 0.5,
+          heigthtimes: 0.5,
+          fonttype: FONTTYPE.FONT_A,
+        },
+      );
       // await BluetoothEscposPrinter.printerAlign(ALIGN.CENTER);
       // await BluetoothEscposPrinter.setBold(2);
       // await BluetoothEscposPrinter.printText("Thanks for your purchase!\n\n\n", {
@@ -215,10 +276,9 @@ const ApiProvider = ({children}) => {
       //   heigthtimes: 0.5,
       //   fonttype: FONTTYPE.FONT_B,
       // });
-
     } catch (error) {
-      console.error("Error printing:", error);
-      alert("Error printing receipt");
+      console.error('Error printing:', error);
+      alert('Error printing receipt');
     }
   };
 
@@ -243,7 +303,7 @@ const ApiProvider = ({children}) => {
         printReceipt,
         loading,
         boundAddress,
-        resetCart
+        resetCart,
       }}>
       {children}
     </ApiContext.Provider>

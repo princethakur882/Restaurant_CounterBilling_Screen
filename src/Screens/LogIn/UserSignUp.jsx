@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -9,63 +9,57 @@ import {
 } from 'react-native';
 import {useForm, Controller} from 'react-hook-form';
 import auth from '@react-native-firebase/auth';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const AdminLogIn = ({navigation}) => {
+const UserSignUp = ({navigation}) => {
   const {
     control,
     handleSubmit,
     formState: {errors},
   } = useForm();
 
-  useEffect(() => {
-    const checkLoggedInUser = async () => {
-      const storedEmail = await AsyncStorage.getItem('EMAIL');
-      if (storedEmail) {
-        navigation.navigate('AdminDashboard');
-      }
-    };
-
-    checkLoggedInUser();
-  }, [navigation]);
-
-  const adminLogin = async data => {
+  const userSignUp = async data => {
     const {username, password} = data;
     try {
-      // Firebase Authentication Sign-In
-      await auth().signInWithEmailAndPassword(username, password);
-      await AsyncStorage.setItem('EMAIL', username);
-      navigation.navigate('AdminDashboard');
+      await auth().createUserWithEmailAndPassword(username, password);
+      Alert.alert('Success', 'Account created successfully');
+      navigation.navigate('UserLogin');
     } catch (error) {
-      if (error.code === 'auth/user-not-found') {
-        Alert.alert('Error', 'No user found with this email');
-      } else if (error.code === 'auth/wrong-password') {
-        Alert.alert('Error', 'Incorrect password');
+      if (error.code === 'auth/email-already-in-use') {
+        Alert.alert('Error', 'That email address is already in use!');
+      } else if (error.code === 'auth/invalid-email') {
+        Alert.alert('Error', 'That email address is invalid!');
+      } else if (error.code === 'auth/weak-password') {
+        Alert.alert('Error', 'Password should be at least 6 characters long!');
       } else {
-        Alert.alert('Error', 'An error occurred during login');
+        Alert.alert('Error', 'An error occurred during sign up');
       }
-      console.error('Login error: ', error);
     }
   };
 
   const onSubmit = data => {
-    adminLogin(data);
+    userSignUp(data);
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Admin Login</Text>
+      <Text style={styles.title}>User Sign Up</Text>
 
       <Controller
         control={control}
-        rules={{required: 'Username is required'}}
+        rules={{
+          required: 'Email is required',
+          pattern: {
+            value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
+            message: 'Invalid email address',
+          },
+        }}
         render={({field: {onChange, onBlur, value}}) => (
           <TextInput
             style={styles.input}
             onBlur={onBlur}
             onChangeText={onChange}
             value={value}
-            placeholder="Username"
+            placeholder="Email"
           />
         )}
         name="username"
@@ -77,7 +71,13 @@ const AdminLogIn = ({navigation}) => {
 
       <Controller
         control={control}
-        rules={{required: 'Password is required'}}
+        rules={{
+          required: 'Password is required',
+          minLength: {
+            value: 6,
+            message: 'Password must be at least 6 characters long',
+          },
+        }}
         render={({field: {onChange, onBlur, value}}) => (
           <TextInput
             style={styles.input}
@@ -96,11 +96,12 @@ const AdminLogIn = ({navigation}) => {
       )}
 
       <TouchableOpacity style={styles.btn} onPress={handleSubmit(onSubmit)}>
-        <Text style={styles.text}>LogIn</Text>
+        <Text style={styles.text}>Sign Up</Text>
       </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => navigation.navigate('AdminSignUp')}>
-        <Text style={styles.linkText}>Don't have an account? Sign Up</Text>
+      <TouchableOpacity
+        onPress={() => navigation.navigate('UserLogin')}
+      >
+        <Text style={styles.linkText}>Already have an account? Log in</Text>
       </TouchableOpacity>
     </View>
   );
@@ -154,4 +155,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AdminLogIn;
+export default UserSignUp;

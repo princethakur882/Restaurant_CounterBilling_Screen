@@ -108,18 +108,23 @@ const MyTabs = () => {
     setPendingCount(prevCount => prevCount - 1);
   };
 
-  const handleRefund = async orderId => {
-    await firestore()
-      .collection('orders')
-      .doc(orderId)
-      .update({status: 'refund'});
-    setOrders(prevOrders =>
-      prevOrders.map(order =>
-        order.orderId === orderId
-          ? {...order, data: {...order.data, status: 'refund'}}
-          : order,
-      ),
-    );
+  const handleRefund = async (orderId) => {
+    try {
+      // Update the status of the order to 'refund'
+      await firestore().collection('orders').doc(orderId).update({ status: 'refund' });
+      console.log(`Order ${orderId} status updated to 'refund'`);
+      
+      // Update local state
+      setOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.orderId === orderId
+            ? { ...order, data: { ...order.data, status: 'refund' } }
+            : order
+        )
+      );
+    } catch (error) {
+      console.error('Error updating order status: ', error);
+    }
   };
 
   return (
@@ -164,7 +169,7 @@ const MyTabs = () => {
           />
         )}
       </Tab.Screen>
-      {/* <Tab.Screen
+      <Tab.Screen
         name="Completed"
         options={{
           tabBarLabel: ({focused}) => (
@@ -184,7 +189,7 @@ const MyTabs = () => {
             handleRefund={handleRefund}
           />
         )}
-      </Tab.Screen> */}
+      </Tab.Screen>
     </Tab.Navigator>
   );
 };

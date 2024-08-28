@@ -1,5 +1,7 @@
 import React from 'react';
-import {createDrawerNavigator} from '@react-navigation/drawer';
+import {View, Text, Alert, TouchableOpacity, StyleSheet} from 'react-native';
+import {createDrawerNavigator, DrawerContentScrollView, DrawerItemList} from '@react-navigation/drawer';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import Items from '../Admin/Tabs/AdminTabs/Items';
@@ -9,11 +11,47 @@ import MyTabs from '../Admin/Tabs/AdminTabs/Orders';
 import Cancel from '../Admin/Tabs/AdminTabs/Cancel';
 import Refund from '../Admin/Tabs/AdminTabs/Refund';
 import OrderCompleted from '../Admin/Tabs/AdminTabs/Completed';
+
 const Drawer = createDrawerNavigator();
+
+const CustomDrawerContent = (props) => {
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'OK',
+          onPress: async () => {
+            await AsyncStorage.removeItem('EMAIL'); 
+            props.navigation.navigate('SelectLogin'); 
+          },
+        },
+      ],
+      {cancelable: false},
+    );
+  };
+
+  return (
+    <DrawerContentScrollView {...props}>
+      <DrawerItemList {...props} />
+      <View style={styles.logoutContainer}>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Text style={styles.logoutText}>Logout</Text>
+        </TouchableOpacity>
+      </View>
+    </DrawerContentScrollView>
+  );
+};
 
 const AdminDashboard = () => {
   return (
     <Drawer.Navigator
+      drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={({route}) => ({
         drawerIcon: ({focused, size}) => {
           let iconName;
@@ -45,7 +83,8 @@ const AdminDashboard = () => {
 
           return <IconComponent name={iconName} size={size} color={color} />;
         },
-      })}>
+      })}
+    >
       <Drawer.Screen name="Items" component={Items} />
       <Drawer.Screen name="Party" component={Party} />
       <Drawer.Screen name="Orders" component={MyTabs} />
@@ -56,5 +95,25 @@ const AdminDashboard = () => {
     </Drawer.Navigator>
   );
 };
+
+const styles = StyleSheet.create({
+  logoutContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    // marginBottom: 20,
+  },
+  logoutButton: {
+    backgroundColor: '#FF7722',
+    padding: 10,
+    borderRadius: 5,
+    marginHorizontal: 20,
+    marginTop:400
+  },
+  logoutText: {
+    color: 'white',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+});
 
 export default AdminDashboard;
