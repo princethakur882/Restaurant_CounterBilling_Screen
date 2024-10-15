@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -11,9 +11,9 @@ import {
   PermissionsAndroid,
 } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
-import { useIsFocused, useNavigation } from '@react-navigation/native';
+import {useIsFocused, useNavigation} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { launchImageLibrary } from 'react-native-image-picker';
+import {launchImageLibrary} from 'react-native-image-picker';
 import storage from '@react-native-firebase/storage';
 
 const Items = () => {
@@ -26,6 +26,8 @@ const Items = () => {
   const [quantity, setQuantity] = useState();
   const [price, setPrice] = useState(0);
   const [imageUrl, setImageUrl] = useState('');
+  const [category, setCategory] = useState('');
+  const categories = ['Veg', 'Non-Veg', 'Chinese', 'Fast Food', 'Drinks'];
 
   useEffect(() => {
     if (isFocused) {
@@ -33,31 +35,40 @@ const Items = () => {
     }
   }, [isFocused]);
 
-  const getItems = () => {
-    firestore()
-      .collection('items')
-      .get()
-      .then(querySnapshot => {
-        const tempData = [];
-        querySnapshot.forEach(documentSnapshot => {
-          tempData.push({
-            id: documentSnapshot.id,
-            data: documentSnapshot.data(),
-          });
+  const getItems = (selectedCategory) => {
+    let query = firestore().collection('items');
+    
+    if (selectedCategory) {
+      query = query.where('category', '==', selectedCategory);
+    }
+    
+    query.get().then(querySnapshot => {
+      const tempData = [];
+      querySnapshot.forEach(documentSnapshot => {
+        tempData.push({
+          id: documentSnapshot.id,
+          data: documentSnapshot.data(),
         });
-        setItems(tempData);
       });
+      setItems(tempData);
+    });
   };
+  
 
-  const deleteItem = docId => {
+  const deleteItem = (docId) => {
     firestore()
       .collection('items')
       .doc(docId)
       .delete()
       .then(() => {
-        getItems();
+        console.log('Item deleted!');
+        getItems(); 
+      })
+      .catch((error) => {
+        console.error('Error deleting item: ', error);
       });
   };
+  
 
   const handleAddItem = () => {
     if (name && price && quantity && imageData) {
@@ -93,7 +104,7 @@ const Items = () => {
   };
 
   const openGallery = async () => {
-    const result = await launchImageLibrary({ mediaType: 'photo' });
+    const result = await launchImageLibrary({mediaType: 'photo'});
     if (result.didCancel) {
     } else {
       console.log(result);
@@ -121,6 +132,7 @@ const Items = () => {
         price,
         quantity: Number(quantity),
         imageUrl: url,
+        category, 
       })
       .then(() => {
         console.log('Item added !');
@@ -128,7 +140,7 @@ const Items = () => {
       });
   };
 
-  const handleQuantityChange = (text) => {
+  const handleQuantityChange = text => {
     const numericQuantity = Number(text);
     setQuantity(numericQuantity);
   };
@@ -142,11 +154,11 @@ const Items = () => {
     setModalVisible(false);
   };
 
-  const renderItem = ({ item }) => {
-    const { name, price, imageUrl, quantity } = item.data;
+  const renderItem = ({item}) => {
+    const {name, price, imageUrl, quantity} = item.data;
     return (
       <View style={styles.itemView}>
-        <Image source={{ uri: imageUrl }} style={styles.itemImage} />
+        <Image source={{uri: imageUrl}} style={styles.itemImage} />
         <View style={styles.nameView}>
           <Text style={styles.nameText}>{name}</Text>
           <View style={styles.priceView}>
@@ -156,7 +168,7 @@ const Items = () => {
             <Text style={styles.qtyText}>{'Qty. ' + quantity}</Text>
           </View>
         </View>
-        <View style={{ margin: 10 }}>
+        <View style={{margin: 10}}>
           <TouchableOpacity
             onPress={() => {
               navigation.navigate('EditItems', {
@@ -167,17 +179,15 @@ const Items = () => {
             <Icon
               name="edit"
               size={20}
-              style={[styles.icon, { color: 'green' }]}
+              style={[styles.icon, {color: 'green'}]}
             />
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => {
-              (item.id);
-            }}>
+            onPress={() => deleteItem(item.id)}>
             <Icon
               name="delete"
               size={20}
-              style={[styles.icon, { marginTop: 20, color: 'red' }]}
+              style={[styles.icon, {marginTop: 20, color: 'red'}]}
             />
           </TouchableOpacity>
         </View>
@@ -217,13 +227,13 @@ const Items = () => {
         <View style={styles.modalBackground}>
           <View style={styles.modalContent}>
             <TouchableOpacity
-              style={{ marginLeft: 260 }}
+              style={{marginLeft: 260}}
               onPress={() => setModalVisible(false)}>
               <Icon name="cancel" size={25} color="gray" />
             </TouchableOpacity>
             {imageData !== null ? (
               <Image
-                source={{ uri: imageData.assets[0].uri }}
+                source={{uri: imageData.assets[0].uri}}
                 style={styles.imageStyle}
               />
             ) : null}
@@ -247,13 +257,20 @@ const Items = () => {
               onChangeText={handleQuantityChange}
               keyboardType="numeric"
             />
-            <TextInput
-              placeholder="Enter Item Image URL"
-              style={styles.inputStyle}
-              value={imageUrl}
-              onChangeText={text => setImageUrl(text)}
-            />
-            <Text style={{ alignSelf: 'center', marginTop: 20 }}>OR</Text>
+            <View style={styles.categorySelection}>
+              {categories.map(cat => (
+                <TouchableOpacity
+                  key={cat}
+                  style={[
+                    styles.categoryButton,
+                    category === cat ? styles.selectedCategory : null,
+                  ]}
+                  onPress={() => setCategory(cat)}>
+                  <Text style={styles.categoryText}>{cat}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
             <TouchableOpacity
               style={styles.pickBtn}
               onPress={() => {
@@ -261,10 +278,8 @@ const Items = () => {
               }}>
               <Text>Pick Image From Gallery</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.uploadBtn}
-              onPress={handleAddItem}>
-              <Text style={{ color: '#fff' }}>Upload Item</Text>
+            <TouchableOpacity style={styles.uploadBtn} onPress={handleAddItem}>
+              <Text style={{color: '#fff'}}>Upload Item</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -431,4 +446,25 @@ const styles = StyleSheet.create({
     marginTop: 20,
     borderRadius: 10,
   },
+  categorySelection: {
+  flexDirection: 'row',
+  justifyContent: 'space-around',
+  marginBottom: 20,
+},
+categoryButton: {
+  padding: 10,
+  borderRadius: 5,
+  borderWidth: 1,
+  borderColor: '#ccc',
+  backgroundColor: '#fff',
+},
+selectedCategory: {
+  backgroundColor: '#FF7722',
+  borderColor: '#FF7722',
+},
+categoryText: {
+  color: '#000',
+  fontWeight: 'bold',
+},
+
 });

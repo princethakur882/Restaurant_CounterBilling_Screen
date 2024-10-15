@@ -6,28 +6,63 @@ const PartyDetails = ({ route }) => {
   const { partyId } = route.params;
   const [party, setParty] = useState(null);
   const [orders, setOrders] = useState([]);
+  const [totalOrderAmount, setTotalOrderAmount] = useState(0);
 
   useEffect(() => {
     const fetchPartyDetails = async () => {
-      const partyDoc = await firestore().collection('parties').doc(partyId).get();
-      setParty({ id: partyDoc.id, ...partyDoc.data() });
+      try {
+        const partyDoc = await firestore().collection('parties').doc(partyId).get();
+        if (partyDoc.exists) {
+          setParty({ id: partyDoc.id, ...partyDoc.data() });
+        }
+      } catch (error) {
+        console.error('Error fetching party details:', error);
+      }
     };
 
     const fetchPartyOrders = async () => {
-      const ordersSnapshot = await firestore()
-        .collection('orders')
-        .where('party', '==', firestore().collection('parties').doc(partyId))
-        .get();
-      const fetchedOrders = ordersSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setOrders(fetchedOrders);
+      try {
+        const ordersSnapshot = await firestore()
+          .collection('orders')
+          .where('party.id', '==', partyId)
+          .get();
+
+        const fetchedOrders = ordersSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setOrders(fetchedOrders);
+
+        // Calculate total amount of all orders
+        const totalAmount = fetchedOrders.reduce((sum, order) => sum + order.total, 0);
+        setTotalOrderAmount(totalAmount);
+      } catch (error) {
+        console.error('Error fetching party orders:', error);
+      }
     };
 
     fetchPartyDetails();
     fetchPartyOrders();
   }, [partyId]);
+
+  // Calculate due amount and update in Firestore
+  useEffect(() => {
+    const updateDueAmount = async () => {
+      if (party && totalOrderAmount !== 0) {
+        const dueAmount = totalOrderAmount - (party.creditAmount || 0);
+        const updatedDueAmount = dueAmount > 0 ? dueAmount : 0;
+
+        await firestore().collection('parties').doc(partyId).update({
+          dueAmount: updatedDueAmount,
+        });
+
+        // Update local state for UI
+        setParty(prev => ({ ...prev, dueAmount: updatedDueAmount }));
+      }
+    };
+
+    updateDueAmount();
+  }, [party, totalOrderAmount]); // Add dependencies to prevent infinite loops
 
   if (!party) {
     return (
@@ -45,9 +80,11 @@ const PartyDetails = ({ route }) => {
         <Text style={styles.itemText}>Address: <Text style={styles.valueText}>{party.address}</Text></Text>
         <Text style={styles.itemText}>Phone Number: <Text style={styles.valueText}>{party.phoneNumber}</Text></Text>
         <Text style={styles.itemText}>GST Number: <Text style={styles.valueText}>{party.gstNumber}</Text></Text>
-        <Text style={styles.itemText}>Due Amount: <Text style={styles.valueText}>{party.dueAmount}</Text></Text>
+        <Text style={styles.itemText}>Total Order Amount: <Text style={styles.valueText}>{'\u20B9'}{totalOrderAmount}</Text></Text>
+        <Text style={styles.itemText}>Credit Amount: <Text style={styles.valueText}>{'\u20B9'}{party.creditAmount || 0}</Text></Text>
+        <Text style={styles.itemText}>Due Amount: <Text style={styles.valueText}>{'\u20B9'}{party.dueAmount}</Text></Text>
       </View>
-      
+
       <Text style={styles.orderHeader}>Orders</Text>
       {orders.length > 0 ? (
         orders.map(order => (

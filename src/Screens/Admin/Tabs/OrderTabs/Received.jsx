@@ -89,7 +89,7 @@ const OrdersReceived = ({ orders, handleAccept, handleCancel }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF2E5',
+    backgroundColor: '#fff',
   },
   orderItem: {
     padding: 16,

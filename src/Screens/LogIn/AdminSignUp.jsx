@@ -18,7 +18,8 @@ const AdminSignUp = ({navigation}) => {
   } = useForm();
 
   const onSignUp = async data => {
-    const {username, password} = data;
+    
+    const {username, password, isAdmin} = data;
     try {
       // Firebase Authentication Sign-Up
       await auth().createUserWithEmailAndPassword(username, password);

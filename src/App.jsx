@@ -15,6 +15,7 @@ import PartyDetails from './Screens/Admin/Tabs/ExtraTabs/PartyDetails';
 import MyTabs from './Screens/Admin/Tabs/AdminTabs/Orders';
 import AdminSignUp from './Screens/LogIn/AdminSignUp';
 import UserSignUp from './Screens/LogIn/UserSignUp';
+import HomeOption from './Screens/Admin/Tabs/ExtraTabs/HomeOption';
 
 
 const Stack = createNativeStackNavigator();
@@ -53,6 +54,14 @@ const App = () => {
             name="HomeMenu"
             component={HomeMenu}
             options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="HomeOption"
+            component={HomeOption}
+            options={{
+              headerShown: true,
+              animation: 'slide_from_right'
+            }}
           />
           <Stack.Screen
             name="AdminDashboard" 

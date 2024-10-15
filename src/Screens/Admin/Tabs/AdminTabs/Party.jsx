@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   Modal,
+  Alert,
 } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import Icons from 'react-native-vector-icons/MaterialIcons';
-import {useNavigation} from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 
 const Party = () => {
   const navigation = useNavigation();
@@ -21,6 +22,7 @@ const Party = () => {
   const [address, setAddress] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [gstNumber, setgstNumber] = useState('');
+  const [dueAmount, setdueAmount] = useState('');
 
   useEffect(() => {
     const unsubscribe = firestore()
@@ -42,54 +44,56 @@ const Party = () => {
         address,
         phoneNumber,
         gstNumber,
+        dueAmount: dueAmount || 0,
+        creditAmount: 0,
       });
-      setName('');
-      setAddress('');
-      setPhoneNumber('');
-      setgstNumber('');
+
       setModalVisible(false);
+      clearFields();
     } else {
-      alert('Please fill all fields');
+      Alert.alert('Error', 'Please fill all fields');
     }
+  };
+
+  const clearFields = () => {
+    setName('');
+    setAddress('');
+    setPhoneNumber('');
+    setgstNumber('');
+    setdueAmount('');
   };
 
   return (
     <View style={styles.container}>
+      <Text style={styles.header}>Party List</Text>
       <FlatList
-        style={{marginBottom: 50}}
         data={users}
         keyExtractor={item => item.id}
-        renderItem={({item}) => (
-          <View style={styles.userItem}>
-            <Text style={styles.itemtext}>{item.name}</Text>
-            <Text style={styles.itemtext}>Due Amt.{item.dueAmount}</Text>
-            <TouchableOpacity
-              style={styles.viewmore}
-              onPress={() =>
-                navigation.navigate('PartyDetails', {partyId: item.id})
-              }>
-              <Text>View More</Text>
-            </TouchableOpacity>
-          </View>
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            onPress={() => navigation.navigate('PartyDetails', { partyId: item.id })}
+            style={styles.userCard}
+          >
+            <Text style={styles.userName}>{item.name}</Text>
+            <Text style={styles.userDetail}>{item.phoneNumber}</Text>
+            <Text style={styles.userDetail}>{item.address}</Text>
+            <Text style={styles.userDetail}>{item.gstNumber}</Text>
+            <Text style={styles.userDetail}>Due Amount: {'\u20B9'}{item.dueAmount}</Text>
+          </TouchableOpacity>
         )}
       />
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => setModalVisible(true)}>
-        <Icons name="add" size={45} color="#fff" />
-      </TouchableOpacity>
+      <Button title="Add Party" onPress={() => setModalVisible(true)} />
+      
+      {/* Modal for Adding New Party */}
       <Modal
         transparent={true}
+        animationType="slide"
         visible={isModalVisible}
         onRequestClose={() => setModalVisible(false)}
-        animationType="slide">
-        <View style={styles.modalBackground}>
+      >
+        <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <TouchableOpacity
-              style={{marginLeft: 260}}
-              onPress={() => setModalVisible(false)}>
-              <Icons name="cancel" size={25} color="gray" />
-            </TouchableOpacity>
+            <Text style={styles.modalHeader}>Add New Party</Text>
             <TextInput
               style={styles.input}
               placeholder="Name"
@@ -115,11 +119,15 @@ const Party = () => {
               value={gstNumber}
               onChangeText={setgstNumber}
             />
-            <TouchableOpacity
-              style={styles.uploadBtn}
-              onPress={handleAddUser}>
-              <Text style={{color: '#Fff'}}>Add Party</Text>
-            </TouchableOpacity>
+            <TextInput
+              style={styles.input}
+              placeholder="Due Amount"
+              value={dueAmount}
+              onChangeText={setdueAmount}
+              keyboardType="numeric"
+            />
+            <Button title="Add" onPress={handleAddUser} />
+            <Button title="Cancel" onPress={() => setModalVisible(false)} color="red" />
           </View>
         </View>
       </Modal>
@@ -130,67 +138,57 @@ const Party = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 10,
+    padding: 20,
+    backgroundColor: '#f2f2f2',
   },
-  userItem: {
-    padding: 10,
-    borderRadius: 5,
-    backgroundColor: '#FF8225',
-    margin: 5,
-    color: 'black',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  header: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    color: '#333',
   },
-  addButton: {
-    position: 'absolute',
-    bottom: 5,
-    right: 35,
-    backgroundColor: '#FF7722',
-    borderRadius: 50,
-    padding: 10,
-    elevation: 5,
-    marginBottom: 50,
+  userCard: {
+    padding: 15,
+    marginVertical: 5,
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    elevation: 2,
   },
-  modalBackground: {
+  userName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  userDetail: {
+    fontSize: 14,
+    color: '#666',
+  },
+  modalContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContent: {
-    backgroundColor: 'white',
-    padding: 10,
-    borderRadius: 10,
     width: '80%',
+    padding: 20,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    elevation: 5,
+  },
+  modalHeader: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
   },
   input: {
     height: 40,
-    borderColor: '#ddd',
-    borderBottomWidth: 1,
-    marginBottom: 20,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    marginBottom: 15,
     paddingHorizontal: 10,
-  },
-  itemtext: {
-    fontSize: 15,
-    fontWeight: '600',
-    width: '33%',
-  },
-  viewmore: {
-    backgroundColor: 'white',
     borderRadius: 5,
-    padding: 5,
-    width: '23%',
-  },
-  uploadBtn: {
-    backgroundColor: '#FF7722',
-    width: '100%',
-    height: 40,
-    borderRadius: 10,
-    alignSelf: 'center',
-    marginTop: 10,
-    marginBottom: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 });
 

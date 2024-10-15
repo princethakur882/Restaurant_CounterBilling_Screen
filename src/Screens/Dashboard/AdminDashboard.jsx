@@ -1,5 +1,5 @@
-import React from 'react';
-import {View, Text, Alert, TouchableOpacity, StyleSheet} from 'react-native';
+import React, {useEffect} from 'react';
+import {View, Text, Alert, TouchableOpacity, StyleSheet, BackHandler} from 'react-native';
 import {createDrawerNavigator, DrawerContentScrollView, DrawerItemList} from '@react-navigation/drawer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -11,6 +11,7 @@ import MyTabs from '../Admin/Tabs/AdminTabs/Orders';
 import Cancel from '../Admin/Tabs/AdminTabs/Cancel';
 import Refund from '../Admin/Tabs/AdminTabs/Refund';
 import OrderCompleted from '../Admin/Tabs/AdminTabs/Completed';
+import {useNavigation, getFocusedRouteNameFromRoute} from '@react-navigation/native';
 
 const Drawer = createDrawerNavigator();
 
@@ -27,7 +28,7 @@ const CustomDrawerContent = (props) => {
         {
           text: 'OK',
           onPress: async () => {
-            await AsyncStorage.removeItem('EMAIL'); 
+            await AsyncStorage.removeItem('ADMIN_EMAIL'); 
             props.navigation.navigate('SelectLogin'); 
           },
         },
@@ -49,9 +50,41 @@ const CustomDrawerContent = (props) => {
 };
 
 const AdminDashboard = () => {
+  // const navigation = useNavigation();
+
+  // useEffect(() => {
+  //   const backAction = () => {
+  //     const currentRoute = getFocusedRouteNameFromRoute(navigation.getState());
+
+  //     if (currentRoute && currentRoute !== 'AdminDashboard') {
+  //       navigation.navigate('AdminDashboard');
+  //     } else {
+  //       BackHandler.exitApp();
+  //     }
+
+  //     return true;
+  //   };
+
+  //   const backHandler = BackHandler.addEventListener(
+  //     'hardwareBackPress',
+  //     backAction,   
+  //                   const backhandler = Backhandler.addEventListner
+  //                    if (currentRout !== "AdminDashboard"){
+  //                           navigation.navigate('AdminDashboard');
+  //                   } else {
+  //                    BackHandler.exitApp(); 
+  //                    }
+  //                      return () => backhandler.remove();
+  //                      navigation
+  //   );
+
+  //   return () => backHandler.remove();
+  // }, [navigation]);
+
   return (
     <Drawer.Navigator
       drawerContent={(props) => <CustomDrawerContent {...props} />}
+      initialRouteName="AdminDashboard" 
       screenOptions={({route}) => ({
         drawerIcon: ({focused, size}) => {
           let iconName;
@@ -100,14 +133,13 @@ const styles = StyleSheet.create({
   logoutContainer: {
     flex: 1,
     justifyContent: 'flex-end',
-    // marginBottom: 20,
   },
   logoutButton: {
     backgroundColor: '#FF7722',
     padding: 10,
     borderRadius: 5,
     marginHorizontal: 20,
-    marginTop:400
+    marginTop: 400,
   },
   logoutText: {
     color: 'white',

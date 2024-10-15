@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import firestore from '@react-native-firebase/firestore';
-import Icons from 'react-native-vector-icons/MaterialIcons';
+import Icons from 'react-native-vector-icons/FontAwesome';
 import AddToCartButton from '../DefaultMenu/CartButton';
 import {ApiContext} from '../../Context/ApiProvider';
 import {format} from 'date-fns';
@@ -41,6 +41,7 @@ const HomeMenu = ({navigation}) => {
   const [toggleIcon, setToggleIcon] = useState(false);
   const [parties, setParties] = useState([]);
   const [selectedParty, setSelectedParty] = useState(null);
+  const [selectedButton, setSelectedButton] = useState(null);
 
   const totalItems = cartItems.reduce((acc, curr) => {
     return acc + curr.count;
@@ -55,7 +56,6 @@ const HomeMenu = ({navigation}) => {
       }));
       setParties(fetchedParties);
     };
-
     fetchParties();
   }, []);
 
@@ -66,6 +66,7 @@ const HomeMenu = ({navigation}) => {
       useNativeDriver: true,
     }).start();
   }, [totalItems]);
+
 
   const cartBarTranslateY = cartBarAnimation.interpolate({
     inputRange: [0, 1],
@@ -87,6 +88,38 @@ const HomeMenu = ({navigation}) => {
       </View>
     );
   };
+
+  const buttonData = [
+    {label: 'Veg', color: '#4CAF50'},
+    {label: 'Non-Veg', color: '#F44336'},
+    {label: 'Soup', color: '#FF9800'},
+    {label: 'Rice', color: '#FFEB3B'},
+    {label: 'Thali', color: '#2196F3'},
+    {label: 'Drinks', color: '#9C27B0'},
+  ];
+
+  const [filteredItems, setFilteredItems] = useState([]);  
+
+// Function to handle button press and fetch items by category
+const handlePress = async (category) => {
+  try {
+    
+    const itemsSnapshot = await firestore()
+      .collection('items')  
+      .where('category', '==', category) 
+      .get();
+
+    const items = itemsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    setFilteredItems(items);
+  } catch (error) {
+    console.error('Error fetching items:', error);
+  }
+};
+
 
   const itemsPerRow = Math.floor(screenWidth / 120);
 
@@ -125,7 +158,7 @@ const HomeMenu = ({navigation}) => {
     return orderId;
   };
 
-  const createOrder = async cartItems => {
+  const createOrder = async (cartItems,partyData) => {
     try {
       const orderId = await generateUniqueOrderId();
       const timestamp = firestore.FieldValue.serverTimestamp();
@@ -143,14 +176,11 @@ const HomeMenu = ({navigation}) => {
         total: totalPrice,
         createdAt: formattedTimestamp,
         status: 'received',
-        party: selectedParty
-          ? firestore().collection('parties').doc(selectedParty.id)
-          : null,
+        party: partyData ? partyData : null,
       };
 
       await firestore().collection('orders').doc(orderId).set(orderData);
-
-      console.log('Order added with ID:', orderId);
+      console.log('Order added with ID:', orderId,'--------->', orderData.party);
 
       // Update the quantity of items in the items collection
       const batch = firestore().batch();
@@ -162,8 +192,6 @@ const HomeMenu = ({navigation}) => {
       });
 
       await batch.commit();
-      console.log('Items quantity updated!');
-
       return orderId;
     } catch (error) {
       console.error('Error creating order: ', error);
@@ -171,8 +199,8 @@ const HomeMenu = ({navigation}) => {
     }
   };
 
-  const handleCashPayment = async () => {
-    const orderId = await createOrder(cartItems);
+  const handleCashPayment = async (partyData) => {
+    const orderId = await createOrder(cartItems,partyData);
     if (orderId) {
       printReceipt(orderId);
       resetCart();
@@ -182,15 +210,16 @@ const HomeMenu = ({navigation}) => {
     setCreditModalVisible(true);
   };
 
-  const handleSelectParty = party => {
+  const handleSelectParty = (evt , party) => {
+    evt.preventDefault()
     setSelectedParty(party);
     setCreditModalVisible(false);
-    handleCashPayment();
+    handleCashPayment(party);
   };
 
   const renderCartItem = ({item}) =>
     item.count > 0 && (
-      <View style={styles.cartItemContainer}>
+      <View key={item.id} style={styles.cartItemContainer}>
         <Image
           source={{uri: item.data.imageUrl}}
           style={styles.itembillImage}
@@ -241,32 +270,55 @@ const HomeMenu = ({navigation}) => {
     inputRange: [0, 1],
     outputRange: [500, 0],
   });
-  console.log(cartItems);
   return (
     <View style={styles.container}>
-      {/* <View style={styles.login}>
+      <View style={styles.login}>
+        <TextInput
+          style={styles.searchBar}
+          placeholder="Search"
+          value={searchQuery}
+          onChangeText={text => setSearchQuery(text)}
+        />
         <TouchableOpacity
           style={styles.btn}
-          onPress={() => navigation.navigate('HomeMenu')}>
-          <Text style={styles.text}>Menu</Text>
+          onPress={() => navigation.navigate('HomeOption')}>
+          <Icons
+            name="user"
+            size={28}
+            color={'white'}
+            style={{paddingVertical: 6}}
+          />
         </TouchableOpacity>
+      </View>
+      {/* <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContainer}>
         <TouchableOpacity
-          style={styles.adminbtn}
-          onPress={() => navigation.navigate('AdminLogIn')}>
-          <Text style={styles.admintext}>Admin</Text>
+        style={[styles.scrollbutton, {backgroundColor:'#FF7722'}]}
+        >
+          <Icon name="filter-list" size={24} color="#000" />
         </TouchableOpacity>
-      </View> */}
-      <TextInput
-        style={styles.searchBar}
-        placeholder="Search"
-        value={searchQuery}
-        onChangeText={text => setSearchQuery(text)}
-      />
+        {buttonData.map((button, index) => (
+          <TouchableOpacity
+            key={index}
+            style={[
+              styles.scrollbutton,
+              {
+                borderColor:
+                  selectedButton === index ? button.color : '#f0f0f0',
+              },
+            ]}
+            onPress={() => handlePress(index)}>
+            <Text style={styles.scrollbuttonText}>{button.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView> */}
       <FlatList
         style={[styles.flatList]}
         data={rows}
         renderItem={renderRow}
-        keyExtractor={(item, index) => index.toString()}
+        keyExtractor={(item, index) => item[0].id.toString()}
         ListEmptyComponent={
           <Text style={styles.emptyText}>No data available.</Text>
         }
@@ -317,7 +369,7 @@ const HomeMenu = ({navigation}) => {
               {transform: [{translateY: modalTranslateY}]},
             ]}>
             <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-              <Icons name="cancel" size={30} color="gray" />
+              <Icon name="cancel" size={30} color="gray" />
             </TouchableOpacity>
             <ScrollView>
               {cartItems.map(item => renderCartItem({item}))}
@@ -334,7 +386,7 @@ const HomeMenu = ({navigation}) => {
             <TouchableOpacity
               style={styles.closeButton}
               onPress={() => setCreditModalVisible(false)}>
-              <Icons name="cancel" size={25} color="gray" />
+              <Icon name="cancel" size={25} color="gray" />
             </TouchableOpacity>
             <Text style={styles.creditModalTitle}>Select Party</Text>
             <ScrollView>
@@ -342,10 +394,10 @@ const HomeMenu = ({navigation}) => {
                 <TouchableOpacity
                   key={party.id}
                   style={styles.partyItem}
-                  onPress={() => handleSelectParty(party)}>
+                  onPress={(e) => handleSelectParty(e, party)}>
                   <Text style={styles.partyName}>{party.name}</Text>
                 </TouchableOpacity>
-              ))}
+              ))}  
             </ScrollView>
           </View>
         </View>
@@ -360,42 +412,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
   },
   login: {
+    marginVertical: 5,
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   btn: {
     backgroundColor: '#FF7722',
-    height: 40,
-    width: '45%',
-    borderRadius: 10,
+    width: '10%',
+    borderRadius: 50,
     margin: 10,
+    alignItems: 'center',
   },
-  adminbtn: {
-    backgroundColor: '#FFF',
-    height: 40,
-    width: '45%',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#FF7722',
-    margin: 10,
-  },
-  text: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#fff',
-    textAlign: 'center',
-    paddingTop: 8,
-  },
-  admintext: {
-    fontSize: 18,
-    fontWeight: '600',
+  restn: {
     color: '#FF7722',
-    textAlign: 'center',
-    paddingTop: 8,
+    margin: 10,
+    fontWeight: '500',
+    fontSize: 28,
   },
   flatList: {
-    // paddingTop: 60,
-    // paddingBottom:50,
     paddingHorizontal: 4,
   },
   rowContainer: {
@@ -403,18 +437,16 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   searchBar: {
-    // position: 'absolute',
-    // top: 50,
-    left: 0,
-    right: 0,
-    padding: 10,
+    height: 40,
+    // paddingHorizontal:130,
+    width: '80%',
+    paddingVertical: 5,
     margin: 10,
     backgroundColor: '#fff',
     borderColor: '#FF7722',
     borderWidth: 1,
     borderRadius: 8,
     elevation: 2,
-    // zIndex: 1,
   },
   itemContainer: {
     width: 120,
@@ -621,6 +653,25 @@ const styles = StyleSheet.create({
     padding: 1,
     borderRadius: 5,
     alignItems: 'flex-end',
+  },
+  scrollContainer: {
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  scrollbutton: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    marginRight: 10,
+    borderRadius: 5,
+    borderWidth:2
+  },
+  scrollbuttonText: {
+    // margin: 5,
+    color: '#000',
+    fontSize: 15,
   },
 });
 

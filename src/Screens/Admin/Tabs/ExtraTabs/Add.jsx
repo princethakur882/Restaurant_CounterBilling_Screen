@@ -7,17 +7,26 @@ import {
   PermissionsAndroid,
   Image,
   ScrollView,
+  CheckBox,
 } from 'react-native';
 import React, {useState} from 'react';
 import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import storage from '@react-native-firebase/storage';
 import firestore from '@react-native-firebase/firestore';
+
 const Add = () => {
   const [imageData, setImageData] = useState(null);
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState();
   const [price, setPrice] = useState(0);
   const [imageUrl, setImageUrl] = useState('');
+  const [categories, setCategories] = useState({
+    veg: false,
+    nonVeg: false,
+    drinks: false,
+    dessert: false,
+  });
+
   const requestCameraPermission = async () => {
     try {
       const granted = await PermissionsAndroid.request(
@@ -42,6 +51,7 @@ const Add = () => {
       console.warn(err);
     }
   };
+
   const openGallery = async () => {
     const result = await launchImageLibrary({mediaType: 'photo'});
     if (result.didCancel) {
@@ -64,14 +74,16 @@ const Add = () => {
   };
 
   const uploadItem = url => {
+    const selectedCategories = Object.keys(categories).filter(key => categories[key]);
     const numericQuantity = Number(quantity);
     firestore()
       .collection('items')
       .add({
         name: name,
         price: price,
-        quantity:numericQuantity,
+        quantity: numericQuantity,
         imageUrl: url + '',
+        categories: selectedCategories,
       })
       .then(() => {
         console.log('item added!');
@@ -79,7 +91,7 @@ const Add = () => {
       });
   };
 
-  const handleQuantityChange = (text) => {
+  const handleQuantityChange = text => {
     const numericQuantity = Number(text);
     setQuantity(numericQuantity);
   };
@@ -90,6 +102,19 @@ const Add = () => {
     setPrice('');
     setQuantity('');
     setImageUrl('');
+    setCategories({
+      veg: false,
+      nonVeg: false,
+      drinks: false,
+      dessert: false,
+    });
+  };
+
+  const handleCategoryChange = category => {
+    setCategories(prevState => ({
+      ...prevState,
+      [category]: !prevState[category],
+    }));
   };
 
   return (
@@ -105,6 +130,7 @@ const Add = () => {
             style={styles.imageStyle}
           />
         ) : null}
+
         <TextInput
           placeholder="Enter Item Name"
           style={styles.inputStyle}
@@ -119,12 +145,46 @@ const Add = () => {
           keyboardType="numeric"
         />
         <TextInput
-          placeholder="Enter Item Quentity"
+          placeholder="Enter Item Quantity"
           style={styles.inputStyle}
           value={quantity}
           onChangeText={handleQuantityChange}
           keyboardType="numeric"
         />
+
+        {/* Category Selection */}
+        <View style={styles.checkboxContainer}>
+          <Text style={styles.checkboxLabel}>Select Categories:</Text>
+          <View style={styles.checkboxItem}>
+            <CheckBox
+              value={categories.veg}
+              onValueChange={() => handleCategoryChange('veg')}
+            />
+            <Text>Veg</Text>
+          </View>
+          <View style={styles.checkboxItem}>
+            <CheckBox
+              value={categories.nonVeg}
+              onValueChange={() => handleCategoryChange('nonVeg')}
+            />
+            <Text>Non-Veg</Text>
+          </View>
+          <View style={styles.checkboxItem}>
+            <CheckBox
+              value={categories.drinks}
+              onValueChange={() => handleCategoryChange('drinks')}
+            />
+            <Text>Drinks</Text>
+          </View>
+          <View style={styles.checkboxItem}>
+            <CheckBox
+              value={categories.dessert}
+              onValueChange={() => handleCategoryChange('dessert')}
+            />
+            <Text>Dessert</Text>
+          </View>
+        </View>
+
         <TextInput
           placeholder="Enter Item Image URL"
           style={styles.inputStyle}
@@ -144,7 +204,7 @@ const Add = () => {
           onPress={() => {
             uplaodImage();
           }}>
-          <Text style={{color: '#Fff'}}>Upload Item</Text>
+          <Text style={{color: '#FFF'}}>Upload Item</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -152,6 +212,7 @@ const Add = () => {
 };
 
 export default Add;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -205,5 +266,20 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignSelf: 'center',
     marginTop: 20,
+  },
+  checkboxContainer: {
+    width: '90%',
+    alignSelf: 'center',
+    marginTop: 30,
+  },
+  checkboxLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  checkboxItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
   },
 });

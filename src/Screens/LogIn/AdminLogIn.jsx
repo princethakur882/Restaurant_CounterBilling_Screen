@@ -20,7 +20,7 @@ const AdminLogIn = ({navigation}) => {
 
   useEffect(() => {
     const checkLoggedInUser = async () => {
-      const storedEmail = await AsyncStorage.getItem('EMAIL');
+      const storedEmail = await AsyncStorage.getItem('ADMIN_EMAIL');
       if (storedEmail) {
         navigation.navigate('AdminDashboard');
       }
@@ -34,7 +34,7 @@ const AdminLogIn = ({navigation}) => {
     try {
       // Firebase Authentication Sign-In
       await auth().signInWithEmailAndPassword(username, password);
-      await AsyncStorage.setItem('EMAIL', username);
+      await AsyncStorage.setItem('ADMIN_EMAIL', username);
       navigation.navigate('AdminDashboard');
     } catch (error) {
       if (error.code === 'auth/user-not-found') {
