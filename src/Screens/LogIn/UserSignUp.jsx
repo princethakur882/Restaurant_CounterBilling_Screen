@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import {useForm, Controller} from 'react-hook-form';
 import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore'; // Import Firestore
 
 const UserSignUp = ({navigation}) => {
   const {
@@ -20,7 +21,15 @@ const UserSignUp = ({navigation}) => {
   const userSignUp = async data => {
     const {username, password} = data;
     try {
-      await auth().createUserWithEmailAndPassword(username, password);
+      // Create the user using Firebase Authentication
+      const userCredential = await auth().createUserWithEmailAndPassword(username, password);
+      const userId = userCredential.user.uid; 
+
+      await firestore().collection('users').doc(userId).set({
+        email: username,
+        createdAt: firestore.FieldValue.serverTimestamp(),
+      });
+
       Alert.alert('Success', 'Account created successfully');
       navigation.navigate('UserLogin');
     } catch (error) {
@@ -98,9 +107,7 @@ const UserSignUp = ({navigation}) => {
       <TouchableOpacity style={styles.btn} onPress={handleSubmit(onSubmit)}>
         <Text style={styles.text}>Sign Up</Text>
       </TouchableOpacity>
-      <TouchableOpacity
-        onPress={() => navigation.navigate('UserLogin')}
-      >
+      <TouchableOpacity onPress={() => navigation.navigate('UserLogin')}>
         <Text style={styles.linkText}>Already have an account? Log in</Text>
       </TouchableOpacity>
     </View>

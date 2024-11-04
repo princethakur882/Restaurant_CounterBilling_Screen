@@ -38,6 +38,7 @@ const UserLogin = ({navigation}) => {
         navigation.navigate('HomeMenu');
       }
     } catch (error) {
+      console.error('Login error:', error); // Log the error for debugging
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
         Alert.alert('Error', 'Wrong email or password');
       } else {

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, Button, Alert } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 
 const PartyDetails = ({ route }) => {
@@ -7,6 +7,8 @@ const PartyDetails = ({ route }) => {
   const [party, setParty] = useState(null);
   const [orders, setOrders] = useState([]);
   const [totalOrderAmount, setTotalOrderAmount] = useState(0);
+  const [creditInput, setCreditInput] = useState(''); 
+  const [paymentReceived, setPaymentReceived] = useState(false); 
 
   useEffect(() => {
     const fetchPartyDetails = async () => {
@@ -50,19 +52,52 @@ const PartyDetails = ({ route }) => {
     const updateDueAmount = async () => {
       if (party && totalOrderAmount !== 0) {
         const dueAmount = totalOrderAmount - (party.creditAmount || 0);
-        const updatedDueAmount = dueAmount > 0 ? dueAmount : 0;
+        const updatedDueAmount = Math.max(dueAmount);
 
         await firestore().collection('parties').doc(partyId).update({
           dueAmount: updatedDueAmount,
         });
-
-        // Update local state for UI
         setParty(prev => ({ ...prev, dueAmount: updatedDueAmount }));
       }
     };
-
     updateDueAmount();
-  }, [party, totalOrderAmount]); // Add dependencies to prevent infinite loops
+  }, [party, totalOrderAmount]);
+
+  const handlePay = async () => {
+    const creditValue = parseFloat(creditInput);
+    if (isNaN(creditValue) || creditValue <= 0) {
+      i
+      Alert.alert('Invalid Input', 'Please enter a valid credit amount.');
+      return;
+    }
+
+    const updatedCreditAmount = (party.creditAmount || 0) + creditValue;
+
+    const updatedDueAmount = totalOrderAmount - updatedCreditAmount;
+
+    const newDueAmount = Math.max(updatedDueAmount, 0);
+
+    // Update party's credit amount and due amount in Firestore
+    await firestore().collection('parties').doc(partyId).update({
+      creditAmount: updatedCreditAmount,
+      dueAmount: newDueAmount,
+    });
+
+    // Update local state
+    setParty(prev => ({ ...prev, creditAmount: updatedCreditAmount, dueAmount: newDueAmount, }));
+    setCreditInput(''); // Clear the input
+    setPaymentReceived(true);
+
+    // Create a "Payment Received" order card
+    const paymentOrder = {
+      id: `payment-${Date.now()}`,
+      status: 'Payment Received',
+      total: creditValue,
+      createdAt: new Date().toISOString(),
+    };
+
+    setOrders(prev => [...prev, paymentOrder]);
+  };
 
   if (!party) {
     return (
@@ -85,16 +120,31 @@ const PartyDetails = ({ route }) => {
         <Text style={styles.itemText}>Due Amount: <Text style={styles.valueText}>{'\u20B9'}{party.dueAmount}</Text></Text>
       </View>
 
+      <View style={styles.paymentContainer}>
+        <TextInput
+          style={styles.input}
+          value={creditInput}
+          onChangeText={setCreditInput}
+          placeholder="Enter credit amount"
+          keyboardType="numeric"
+        />
+        <Button title="Pay" onPress={handlePay} />
+      </View>
+
       <Text style={styles.orderHeader}>Orders</Text>
       {orders.length > 0 ? (
         orders.map(order => (
-          <View key={order.id} style={styles.orderContainer}>
+          <View key={order.id} style={[
+              styles.orderContainer,
+              order.status === 'Payment Received' &&
+                styles.paymentOrderContainer, 
+            ]}>
             <Text style={styles.orderText}>Order ID: <Text style={styles.valueText}>{order.id}</Text></Text>
             <Text style={styles.orderText}>Status: <Text style={styles.valueText}>{order.status}</Text></Text>
             <Text style={styles.orderText}>Total: <Text style={styles.valueText}>{'\u20B9'}{order.total}</Text></Text>
             <Text style={styles.orderText}>Created At: <Text style={styles.valueText}>{order.createdAt}</Text></Text>
             <Text style={styles.orderText}>Items:</Text>
-            {order.items.map((item, index) => (
+            {order.items && order.items.map((item, index) => (
               <Text key={index} style={styles.orderItemText}>
                 <Text style={styles.valueText}>{item.name}</Text> - {item.quantity} x {'\u20B9'}{item.price}
               </Text>
@@ -187,6 +237,23 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginVertical: 20,
   },
+  paymentContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  input: {
+    flex: 1,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    marginRight: 10,
+  },
+  paymentOrderContainer: {
+    backgroundColor: '#d4edda', 
+    borderColor: '#c3e6cb', 
+  }
 });
 
 export default PartyDetails;

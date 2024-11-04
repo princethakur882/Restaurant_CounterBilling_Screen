@@ -73,6 +73,7 @@ const Items = () => {
   const handleAddItem = () => {
     if (name && price && quantity && imageData) {
       uploadImage();
+      setModalVisible(false);
     } else {
       alert('Please fill all fields');
     }
@@ -272,11 +273,11 @@ const Items = () => {
             </View>
 
             <TouchableOpacity
-              style={styles.pickBtn}
+              style={styles.uploadBtn}
               onPress={() => {
                 requestCameraPermission();
               }}>
-              <Text>Pick Image From Gallery</Text>
+              <Text style={{color: '#fff'}}>Pick Image From Gallery</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.uploadBtn} onPress={handleAddItem}>
               <Text style={{color: '#fff'}}>Upload Item</Text>
@@ -427,15 +428,6 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginBottom: 10,
     paddingHorizontal: 10,
-  },
-  pickBtn: {
-    height: 40,
-    width: '90%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-    marginTop: 20,
-    borderRadius: 10,
   },
   uploadBtn: {
     height: 40,

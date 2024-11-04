@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -11,8 +11,8 @@ import {
   Alert,
 } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
-import Icons from 'react-native-vector-icons/MaterialIcons';
-import { useNavigation } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import {useNavigation} from '@react-navigation/native';
 
 const Party = () => {
   const navigation = useNavigation();
@@ -37,19 +37,24 @@ const Party = () => {
     return () => unsubscribe();
   }, []);
 
+  
+
   const handleAddUser = async () => {
     if (name && address && phoneNumber && gstNumber) {
-      await firestore().collection('parties').add({
-        name,
-        address,
-        phoneNumber,
-        gstNumber,
-        dueAmount: dueAmount || 0,
-        creditAmount: 0,
-      });
-
       setModalVisible(false);
       clearFields();
+      await firestore()
+        .collection('parties')
+        .add({
+          name,
+          address,
+          phoneNumber,
+          gstNumber,
+          dueAmount: dueAmount || 0,
+          creditAmount: 0,
+        });
+
+      
     } else {
       Alert.alert('Error', 'Please fill all fields');
     }
@@ -65,34 +70,48 @@ const Party = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Party List</Text>
       <FlatList
         data={users}
         keyExtractor={item => item.id}
-        renderItem={({ item }) => (
+        renderItem={({item}) => (
           <TouchableOpacity
-            onPress={() => navigation.navigate('PartyDetails', { partyId: item.id })}
-            style={styles.userCard}
-          >
-            <Text style={styles.userName}>{item.name}</Text>
-            <Text style={styles.userDetail}>{item.phoneNumber}</Text>
-            <Text style={styles.userDetail}>{item.address}</Text>
-            <Text style={styles.userDetail}>{item.gstNumber}</Text>
-            <Text style={styles.userDetail}>Due Amount: {'\u20B9'}{item.dueAmount}</Text>
+            onPress={() =>
+              navigation.navigate('PartyDetails', {partyId: item.id})
+            }
+            style={styles.userCard}>
+            <View style={styles.userInfo}>
+              <Text style={styles.userName}>{item.name}</Text>
+              <Text style={styles.userDetail}>{item.phoneNumber}</Text>
+            </View>
+            <View style={{flex:1, flexDirection:'row-reverse'}}> 
+              <Text style={styles.userDetail}>
+                Due Amount: {'\u20B9'}
+                {item.dueAmount}
+              </Text>
+            </View>
           </TouchableOpacity>
         )}
       />
-      <Button title="Add Party" onPress={() => setModalVisible(true)} />
-      
+
+<TouchableOpacity
+        style={styles.addButton}
+        onPress={() => setModalVisible(true)}>
+        <Icon name="add" size={45} color="#fff" />
+      </TouchableOpacity>
+
       {/* Modal for Adding New Party */}
       <Modal
         transparent={true}
         animationType="slide"
         visible={isModalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
+        onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
+          <TouchableOpacity
+              style={{marginLeft: 260}}
+              onPress={() => setModalVisible(false)}>
+              <Icon name="cancel" size={25} color="gray" />
+            </TouchableOpacity>
             <Text style={styles.modalHeader}>Add New Party</Text>
             <TextInput
               style={styles.input}
@@ -126,8 +145,9 @@ const Party = () => {
               onChangeText={setdueAmount}
               keyboardType="numeric"
             />
-            <Button title="Add" onPress={handleAddUser} />
-            <Button title="Cancel" onPress={() => setModalVisible(false)} color="red" />
+            <TouchableOpacity style={styles.uploadBtn} onPress={handleAddUser}>
+              <Text style={{color: '#fff'}}>ADD PARTY</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -148,21 +168,44 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   userCard: {
-    padding: 15,
-    marginVertical: 5,
-    borderRadius: 8,
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    // alignItems: 'center',
     backgroundColor: '#fff',
-    elevation: 2,
+    padding: 15,
+    marginVertical: 10,
+    borderRadius: 10,
+    elevation: 5, // For shadow on Android
+    shadowColor: '#000', // For shadow on iOS
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    backgroundColor: '#FF8225', // Orange background
+  },
+  userInfo: {
+    flex: 1,
+    flexDirection:'row',
+    justifyContent: 'space-between',
   },
   userName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#fff',
+    marginBottom: 5,
   },
   userDetail: {
     fontSize: 14,
-    color: '#666',
+    color: '#fff',
+    marginBottom: 3,
   },
+  arrowContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 50,
+    padding: 5,
+  },
+
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -189,6 +232,25 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     paddingHorizontal: 10,
     borderRadius: 5,
+  },
+  addButton: {
+    position: 'absolute',
+    bottom: 5,
+    right: 35,
+    backgroundColor: '#FF7722',
+    borderRadius: 50,
+    padding: 10,
+    elevation: 5,
+    marginBottom: 50,
+  },
+  uploadBtn: {
+    height: 40,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FF7722',
+    marginTop: 20,
+    borderRadius: 10,
   },
 });
 

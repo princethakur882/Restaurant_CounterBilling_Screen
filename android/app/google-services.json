@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "352373503175",
-    "project_id": "openstore-d403a",
-    "storage_bucket": "openstore-d403a.appspot.com"
+    "project_number": "864109215000",
+    "project_id": "testing-ba9b8",
+    "storage_bucket": "testing-ba9b8.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:352373503175:android:ab691054abdc693976fae2",
+        "mobilesdk_app_id": "1:864109215000:android:310153a53c5d8e2288726d",
         "android_client_info": {
           "package_name": "com.openstore"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyC3QQbYm0Tu6OgM6ur8nPJeK72VQLO46TU"
+          "current_key": "AIzaSyAM4QOXxv-FGYAy5aCFJxiKXjVmUK-R-GY"
         }
       ],
       "services": {

@@ -130,7 +130,6 @@ const handlePress = async (category) => {
         return acc;
       }, [])
     : [];
-
   const renderRow = ({item}) => (
     <View style={styles.rowContainer}>
       {item.map(i => (
@@ -141,22 +140,18 @@ const handlePress = async (category) => {
     </View>
   );
 
+
   const generateUniqueOrderId = async () => {
     let orderId;
     let isUnique = false;
-
     while (!isUnique) {
       orderId = Math.floor(100000 + Math.random() * 900000).toString();
-
-      const orderRef = await firestore()
-        .collection('orders')
-        .doc(orderId)
-        .get();
+      const orderRef = await firestore().collection('orders').doc(orderId).get();
       isUnique = !orderRef.exists;
     }
-
     return orderId;
   };
+  
 
   const createOrder = async (cartItems,partyData) => {
     try {
@@ -178,7 +173,9 @@ const handlePress = async (category) => {
         status: 'received',
         party: partyData ? partyData : null,
       };
+      
 
+      
       await firestore().collection('orders').doc(orderId).set(orderData);
       console.log('Order added with ID:', orderId,'--------->', orderData.party);
 
@@ -210,8 +207,7 @@ const handlePress = async (category) => {
     setCreditModalVisible(true);
   };
 
-  const handleSelectParty = (evt , party) => {
-    evt.preventDefault()
+  const handleSelectParty = (party) => {
     setSelectedParty(party);
     setCreditModalVisible(false);
     handleCashPayment(party);
@@ -394,7 +390,7 @@ const handlePress = async (category) => {
                 <TouchableOpacity
                   key={party.id}
                   style={styles.partyItem}
-                  onPress={(e) => handleSelectParty(e, party)}>
+                  onPress={() => handleSelectParty(party)}>
                   <Text style={styles.partyName}>{party.name}</Text>
                 </TouchableOpacity>
               ))}  
